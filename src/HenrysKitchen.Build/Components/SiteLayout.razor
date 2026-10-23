@@ -1,0 +1,87 @@
+@*
+    The parts every page shares: the <head>, the header with logo, search and menu,
+    and the footer. Pages put their own content inside it:
+
+        <SiteLayout Title="Big Mac" Description="...">
+            ...the page...
+        </SiteLayout>
+
+    The hand-written pages in static/ (home, About, search, the Desk) carry their own
+    copy of this header and footer; keep them in step when changing either.
+*@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+@if (NoIndex)
+{
+    <meta name="robots" content="noindex, nofollow">
+}
+<title>@Title | Henry’s Kitchen</title>
+<meta name="description" content="@Description">
+<meta property="og:title" content="@Title | Henry’s Kitchen">
+<meta property="og:description" content="@Description">
+<meta property="og:image" content="@ImageUrl">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@@400;700&family=Oswald:wght@@500;600&family=Fraunces:opsz,wght,SOFT@@9..144,100..900,0..100&display=swap">
+<link rel="stylesheet" href="/assets/css/site.css">
+<script src="/assets/js/site.js" defer></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <div class="header-row">
+      <a class="logo" href="/" aria-label="Henry’s Kitchen home"><span class="logo-henrys">HENRY’S</span><span class="logo-kitchen">KITCHEN</span></a>
+      <form class="search" role="search" action="/search/" method="get">
+        <label class="visually-hidden" for="q">Find a recipe or ingredient</label>
+        <input id="q" name="q" type="search" placeholder="Find a recipe or ingredient">
+        <button type="submit" aria-label="Search"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg></button>
+      </form>
+    </div>
+    <nav class="main-nav" aria-label="Main">
+      <a href="/#recipe-box">Recipes</a>
+      <a href="/#live">Live from the Kitchen</a>
+      <a href="/about/">About Henry</a>
+    </nav>
+  </div>
+</header>
+
+@ChildContent
+
+<footer class="site-footer">
+  <div class="wrap footer-row">
+    <div class="footer-text">
+      <a class="logo" href="/" aria-label="Henry’s Kitchen home"><span class="logo-henrys">HENRY’S</span><span class="logo-kitchen">KITCHEN</span></a>
+      <p><strong>Kitchen safety:</strong> Recipes on this site are shared for entertainment. Always cook responsibly: follow safe food-handling practices, cook food to safe temperatures, never leave the stove unattended, and keep a working smoke alarm.</p>
+      <p>Henry’s Kitchen recipes are kept by The Users. This site is not operated by Henry Phillips.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <a href="/#recipe-box">Recipes</a>
+      <a href="https://www.twitch.tv/henlips1">Live from the Kitchen</a>
+      <a href="/about/">About Henry</a>
+      <a href="/about/#staff">Kitchen Staff</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>
+
+@code {
+    /// <summary>The page's name, e.g. "Big Mac". " | Henry’s Kitchen" is added after it.</summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+
+    /// <summary>One or two sentences for search engines and link previews.</summary>
+    [Parameter, EditorRequired] public string Description { get; set; } = "";
+
+    /// <summary>The full address of the picture shown in link previews.</summary>
+    [Parameter, EditorRequired] public string ImageUrl { get; set; } = "";
+
+    /// <summary>True until launch: asks search engines not to list the page.</summary>
+    [Parameter] public bool NoIndex { get; set; }
+
+    [Parameter, EditorRequired] public RenderFragment? ChildContent { get; set; }
+}

@@ -1,0 +1,222 @@
+@*
+    A recipe page: /recipes/<id>/index.html.
+
+    Written-up recipes show Henry's introduction, the recipe card, steps and songs.
+    Episodes nobody has written up yet show the same layout with placeholder text,
+    so every episode has a page from day one.
+
+    The work of deciding what to show is in RecipePageModel.cs; this file only lays it out.
+*@
+<SiteLayout Title="@Model.Title" Description="@Model.Description" ImageUrl="@Model.ShareImageUrl" NoIndex="@Model.NoIndex">
+<main class="narrow stack" style="padding-top: 32px; padding-bottom: 48px; gap: 32px">
+
+  <div class="recipe-head stack">
+    <nav class="kicker" aria-label="Breadcrumb">
+      <a href="/#recipe-box">Recipes</a> ›
+      @if (Model.Filed is { } filed)
+      {
+        <text>@filed.Section › @filed.Name</text>
+      }
+      else
+      {
+        <Placeholder Value="Category" />
+      }
+    </nav>
+    <h1 class="ribbon"><ContentText Value="@Model.Title" /></h1>
+    <p class="dek">
+      @if (Recipe?.Subtitle is { } subtitle)
+      {
+        <ContentText Value="@subtitle" />
+      }
+      else
+      {
+        <Placeholder Value="A one-line description of the dish." />
+      }
+    </p>
+    <p class="meta">Recipe by <strong>Henry</strong> · @Model.FromLine · @Model.AiredText</p>
+    @if (Video.Part2YoutubeId is { } part2)
+    {
+      <p class="meta">A two-part episode. <a href="https://www.youtube.com/watch?v=@part2">Watch part 2 on YouTube</a>.</p>
+    }
+    <div class="actions no-print">
+      <a class="btn btn-primary" href="#recipe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"></path></svg>Jump to Recipe</a>
+      <button class="btn btn-outline" type="button" data-print>Print</button>
+      <button class="btn btn-outline" type="button" data-share>Share</button>
+    </div>
+  </div>
+
+  <div class="mint-mat no-print">
+    <figure class="photo-frame tilt" style="margin: 0">
+      <img src="@Model.ImageUrl" alt="@Model.ImageAlt" width="480" height="270">
+      <span class="corner tl" aria-hidden="true"></span><span class="corner tr" aria-hidden="true"></span><span class="corner bl" aria-hidden="true"></span><span class="corner br" aria-hidden="true"></span>
+    </figure>
+  </div>
+
+  <section class="stack" aria-label="Henry’s introduction">
+    <blockquote class="index-card">
+      @if (Recipe is null)
+      {
+        <p><Placeholder Value="Henry’s introduction, in his own words, from the start of the episode." /></p>
+      }
+      else
+      {
+        @foreach (var paragraph in Recipe.Intro.Paragraphs)
+        {
+          <p><ContentText Value="@paragraph" /></p>
+        }
+      }
+    </blockquote>
+    <button class="btn btn-outline btn-small no-print" style="align-self: flex-start" type="button" data-play="episode-player" data-start="@IntroStart.TotalSeconds">
+      <PlayIcon />Watch Henry’s introduction · @IntroStart</button>
+  </section>
+
+  <section id="recipe" class="recipe-card" aria-labelledby="card-title">
+    <div class="recipe-card-head">
+      <h2 id="card-title"><ContentText Value="@Model.Title" /></h2>
+      <button class="btn btn-small no-print" type="button" data-print>Print Recipe</button>
+    </div>
+    <dl class="recipe-stats">
+      @if (Video.Episode is { } episode)
+      {
+        <div><dt>Episode</dt><dd>@episode</dd></div>
+      }
+      @if (Recipe is null)
+      {
+        <div><dt>Servings</dt><dd><Placeholder Value="To come" /></dd></div>
+      }
+      else if (Recipe.Servings is { } servings)
+      {
+        <div><dt>Servings</dt><dd><ContentText Value="@servings" /></dd></div>
+      }
+      @foreach (var stat in Recipe?.Stats ?? [])
+      {
+        <div><dt><ContentText Value="@stat.Label" /></dt><dd><ContentText Value="@stat.Value" /></dd></div>
+      }
+      <div><dt>Episode length</dt><dd>@Video.Length</dd></div>
+    </dl>
+    <div class="recipe-card-body">
+      <section class="stack" style="gap: 6px" aria-labelledby="ing-heading">
+        <h3 id="ing-heading">Ingredients</h3>
+        <ul class="ingredients">
+          @if (Recipe is null)
+          {
+            <li><label><input type="checkbox"><span><Placeholder Value="Ingredients, as Henry lists them" /></span></label></li>
+          }
+          else
+          {
+            @foreach (var ingredient in Recipe.Ingredients)
+            {
+              <li><label><input type="checkbox"><span><ContentText Value="@ingredient" /></span></label></li>
+            }
+          }
+        </ul>
+        @if (Recipe?.IngredientsAt is { } ingredientsAt)
+        {
+          <button class="btn btn-outline btn-small no-print" style="align-self: flex-start" type="button" data-play="episode-player" data-start="@ingredientsAt.TotalSeconds">
+            <PlayIcon />Watch Henry list them · @ingredientsAt</button>
+        }
+      </section>
+
+      <section class="stack no-print" style="gap: 8px" aria-labelledby="video-heading">
+        <h3 id="video-heading">Watch the Episode</h3>
+        <button class="player" id="episode-player" type="button" data-video="@Video.YoutubeId" data-title="Henry’s Kitchen: @Model.Title" data-play="episode-player" data-start="0" aria-label="Play @Model.Title">
+          <img src="https://i.ytimg.com/vi/@(Video.YoutubeId)/hqdefault.jpg" alt="" width="480" height="270">
+          <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M10 8l6 4-6 4z"></path></svg>
+          <span>@Video.Length · Plays from YouTube</span>
+        </button>
+      </section>
+
+      <section class="stack" style="gap: 8px" aria-labelledby="steps-heading">
+        <h3 id="steps-heading">Instructions</h3>
+        <ol class="steps">
+          @if (Recipe is null)
+          {
+            <li><span class="step-number">1</span><div class="step-body"><span><Placeholder Value="Henry’s steps, each with the time it starts in the episode." /></span></div></li>
+          }
+          else
+          {
+            @foreach (var (step, index) in Recipe.Steps.Select((s, i) => (s, i)))
+            {
+              <li><span class="step-number">@(index + 1)</span><div class="step-body"><span><ContentText Value="@step.Text" /></span>
+                @if (step.At is { } at)
+                {
+                  <button class="btn btn-outline btn-small" type="button" data-play="episode-player" data-start="@at.TotalSeconds"><PlayIcon />Watch this step · @at</button>
+                }
+              </div></li>
+            }
+          }
+        </ol>
+      </section>
+
+      @if (Model.NotesHtml is { } notes)
+      {
+        <section class="stack" style="gap: 8px" aria-labelledby="notes-heading">
+          <h3 id="notes-heading">Notes</h3>
+          <div class="notes">@((MarkupString)notes)</div>
+        </section>
+      }
+    </div>
+  </section>
+
+  @if (Recipe is { Songs.Count: > 0 })
+  {
+    <section class="stack no-print" aria-labelledby="songs-heading">
+      <h2 id="songs-heading">Songs</h2>
+      <ul class="songs">
+        @foreach (var song in Recipe.Songs)
+        {
+          <li>
+            <div>
+              <div class="song-title"><ContentText Value="@song.Title" /></div>
+              <div class="song-meta">
+                @song.Artist
+                @if (song.Album is { } album)
+                {
+                  <text> · </text><em><ContentText Value="@album" /></em>
+                }
+              </div>
+            </div>
+            <div class="song-right">
+              @if (song.HeardInEpisode)
+              {
+                <span class="kicker" style="font-size: 14px">Heard in this episode</span>
+              }
+              @if (song.YoutubeMusic is { } link)
+              {
+                <a class="btn btn-primary btn-small" href="@link">Listen on YouTube Music</a>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (Model.More.Count > 0)
+  {
+    <section class="no-print" aria-labelledby="more-heading">
+      <h2 id="more-heading" style="margin-bottom: 16px">More from Henry’s Kitchen</h2>
+      <div class="card-grid">
+        @foreach (var card in Model.More)
+        {
+          <article class="card">
+            <div class="thumb"><img src="https://i.ytimg.com/vi/@(card.YoutubeId)/mqdefault.jpg" alt="" width="320" height="180" loading="lazy"></div>
+            <div class="kicker">@card.Kicker</div>
+            <a class="card-title" href="@card.Url"><ContentText Value="@card.Title" /></a>
+          </article>
+        }
+      </div>
+    </section>
+  }
+</main>
+</SiteLayout>
+
+@code {
+    [Parameter, EditorRequired] public RecipePageModel Model { get; set; } = default!;
+
+    private Video Video => Model.Video;
+    private Recipe? Recipe => Model.Recipe;
+
+    /// <summary>Where "Watch Henry’s introduction" starts the video.</summary>
+    private Timecode IntroStart => Recipe?.Intro.Start ?? new Timecode(0);
+}

@@ -65,6 +65,15 @@ h1, h2, h3 { font-family: var(--font-heading); font-weight: 600; line-height: 1.
 h2 { font-size: 32px; }
 h3 { font-size: 24px; }
 
+/* Placeholder text: written as [[like this]] in content files. A dashed
+   underline marks it for review; the launch build refuses to publish it. */
+.placeholder {
+  text-decoration: underline dashed var(--pencil);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  cursor: help;
+}
+
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; overflow: hidden;
   clip: rect(0 0 0 0); white-space: nowrap;

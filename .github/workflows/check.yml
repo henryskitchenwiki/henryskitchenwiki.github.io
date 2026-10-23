@@ -1,0 +1,27 @@
+# Runs on every pull request: builds the site and runs the tests, without publishing.
+# If a recipe file has a problem, the pull request shows a red X and the reason
+# appears next to the file under "Files changed".
+name: Check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Run the tests
+        run: dotnet test tests/HenrysKitchen.Tests --configuration Release
+
+      - name: Build the site
+        run: dotnet run --project src/HenrysKitchen.Build --configuration Release

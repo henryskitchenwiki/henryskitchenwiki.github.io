@@ -1,0 +1,104 @@
+/* Transcription Desk
+   Extra styles for /desk/. Everything else (colors, fonts, buttons, logo)
+   comes from /assets/css/site.css so the Desk always matches the site. */
+
+/* ---- Header ---------------------------------------------------------- */
+.desk-header { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; padding-top: 14px; padding-bottom: 14px; }
+.desk-title { margin: 0; font-family: var(--font-heading); font-size: 30px; text-transform: uppercase; letter-spacing: .02em; }
+.desk-subtitle { margin: 2px 0 0; color: var(--pencil); }
+
+/* ---- Two-column layout: episode on the left, recipe on the right ----- */
+.desk { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; padding-top: 24px; padding-bottom: 64px; }
+.desk-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+/* Keep the video in view while filling in the form on wide screens. */
+.desk > .desk-col:first-child { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; padding-right: 4px; }
+@media (max-width: 980px) {
+  .desk { grid-template-columns: minmax(0, 1fr); }
+  .desk > .desk-col:first-child { position: static; max-height: none; overflow: visible; }
+}
+
+/* ---- Panels and fields ---------------------------------------------- */
+.panel { background: var(--plate); border: 1px solid var(--flour); border-radius: 8px; padding: 18px 20px; box-shadow: var(--shadow-soft); }
+.panel h2 { margin: 0 0 10px; font-size: 22px; }
+.optional { font-family: var(--font-body); font-weight: 400; font-size: 15px; color: var(--pencil); text-transform: none; letter-spacing: 0; }
+.hint { margin: 4px 0 10px; color: var(--pencil); font-size: 16px; }
+.field-label { display: block; margin: 12px 0 4px; font-weight: 700; font-size: 16px; }
+.field { width: 100%; box-sizing: border-box; font: inherit; font-size: 17px; padding: 8px 10px; border: 1px solid var(--pencil); border-radius: 6px; background: #FFFFFF; color: var(--cast-iron); }
+.field:focus { outline: 3px solid var(--teal); outline-offset: 1px; }
+textarea.field { resize: vertical; line-height: 1.45; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+.btn-link { background: none; border: 0; color: var(--ribbon); font-weight: 700; text-decoration: underline; padding: 0 6px; min-height: 36px; cursor: pointer; }
+.check { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 16px; }
+
+/* Time boxes with a stopwatch button beside them. */
+.time-row { display: flex; flex-wrap: wrap; gap: 16px; }
+.time-row > div { flex: 1 1 140px; }
+.time-field { display: flex; gap: 6px; align-items: stretch; }
+.time-field .time { width: 7.5em; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.stamp { min-width: 44px; padding: 0 8px; }
+.field.is-bad { border-color: var(--ribbon); background: #FDF0EE; }
+
+/* ---- Player ---------------------------------------------------------- */
+.video-box { position: relative; aspect-ratio: 16 / 9; background: var(--cast-iron); border-radius: 6px; overflow: hidden; }
+.video-box iframe, .video-box #yt-player { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-box .video-note { position: absolute; inset: 0; display: grid; place-items: center; color: var(--recipe-card); text-align: center; padding: 16px; }
+.player-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.player-controls [aria-pressed="true"] { background: var(--butter-paper); }
+.clock { margin-left: auto; font-variant-numeric: tabular-nums; }
+.shortcuts { margin-top: 10px; font-size: 16px; }
+.shortcuts ul { margin: 6px 0 0; padding-left: 20px; }
+kbd { font: 14px/1 var(--font-body); border: 1px solid var(--pencil); border-bottom-width: 2px; border-radius: 4px; padding: 2px 5px; background: var(--recipe-card); }
+
+/* ---- Transcript lines ------------------------------------------------ */
+.segments { list-style: none; margin: 10px 0 0; padding: 0; max-height: 360px; overflow-y: auto; border: 1px solid var(--flour); border-radius: 6px; }
+.segments:empty { display: none; }
+.segments li { display: flex; gap: 10px; align-items: baseline; padding: 6px 10px; border-bottom: 1px solid var(--flour); cursor: pointer; }
+.segments li:last-child { border-bottom: 0; }
+.segments li:hover { background: var(--recipe-card); }
+.segments li.is-selected { background: var(--mint-paper); }
+.segments li.is-now { box-shadow: inset 4px 0 0 var(--teal); }
+.segments input { flex: 0 0 auto; width: 18px; height: 18px; }
+.segments .seg-time { flex: 0 0 auto; border: 0; background: none; color: var(--teal); font: 700 15px var(--font-body); font-variant-numeric: tabular-nums; cursor: pointer; padding: 0; text-decoration: underline; }
+.segments .seg-text { flex: 1 1 auto; }
+
+/* ---- Steps and songs ------------------------------------------------- */
+.step-list, .song-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.step-item { display: flex; gap: 12px; align-items: flex-start; }
+.step-item .step-number { flex: 0 0 auto; margin-top: 4px; }
+.step-fields { flex: 1 1 auto; min-width: 0; }
+.step-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 6px; }
+.song-item { border: 1px dashed var(--photo-corner); border-radius: 6px; padding: 4px 14px 10px; }
+.song-item .field-label { margin-top: 8px; }
+.song-item .field { margin-top: 4px; font-weight: 400; }
+
+/* ---- Check results and file preview --------------------------------- */
+.finish { background: var(--recipe-card); }
+#check-results:empty { display: none; }
+#check-results { margin-top: 14px; }
+.check-list { margin: 6px 0 0; padding-left: 22px; }
+.check-list li { margin: 3px 0; }
+.check-ok { color: var(--kitchen-green); font-weight: 700; }
+.check-problem { color: var(--ribbon-shadow); font-weight: 700; }
+.check-warning { color: var(--pencil); font-weight: 700; }
+.file-preview { max-height: 360px; overflow: auto; background: var(--plate); border: 1px solid var(--flour); border-radius: 6px; padding: 12px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+.finish details { margin-top: 14px; }
+.finish summary { cursor: pointer; font-weight: 700; }
+.step-item .step-number { width: 32px; height: 32px; min-width: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--ribbon); color: #FFFFFF; font: 600 17px var(--font-heading); }
+
+/* ---- Sending: two clear paths, with or without a GitHub account ----- */
+.send-step { margin: 14px 0 18px; }
+.send-step h3, .send-choice h3 { margin: 0 0 4px; font-size: 19px; }
+.send-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.send-choice { background: var(--plate); border: 1px solid var(--flour); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.send-choice p { margin: 0; font-size: 16px; }
+.send-choice .btn { align-self: flex-start; margin-top: 4px; }
+#send-results:empty { display: none; }
+#send-results { margin-top: 14px; background: var(--mint-paper); border-radius: 8px; padding: 4px 16px 12px; }
+
+/* ---- Getting the transcript from YouTube ---------------------------- */
+.get-steps { margin: 6px 0 10px; padding-left: 22px; font-size: 16px; }
+.get-steps li { margin: 8px 0; }
+.get-steps .btn { margin-right: 4px; }
+
+/* Anything marked hidden stays hidden, even if a layout class sets display. */
+[hidden] { display: none !important; }

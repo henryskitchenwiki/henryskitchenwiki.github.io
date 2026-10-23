@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The rules of the kitchen: what a recipe is, how recipe files are read,
+       and what makes one valid. No web pages in here, so it's easy to test
+       and the 2.0 backend can reuse it. -->
+
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="HenrysKitchen.Tests" />
+  </ItemGroup>
+
+</Project>

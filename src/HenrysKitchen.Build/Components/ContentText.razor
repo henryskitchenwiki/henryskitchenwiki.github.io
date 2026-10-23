@@ -1,0 +1,20 @@
+@*
+    Shows text from a content file. Anything in [[double square brackets]] is shown
+    as placeholder text: dashed underline on screen, and "(placeholder)" for screen readers.
+    Usage: <ContentText Value="@recipe.Subtitle" />
+*@
+@foreach (var part in PlaceholderText.Split(Value))
+{
+    if (part.IsPlaceholder)
+    {
+        <Placeholder Value="@part.Text" />
+    }
+    else
+    {
+        @part.Text
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public string? Value { get; set; }
+}

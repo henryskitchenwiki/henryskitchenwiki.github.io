@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!-- Builds the website: reads content/ and data/, checks them, and writes
+       finished pages to _site/. The pages are Razor components (Components/*.razor)
+       rendered straight to HTML files; no web server is involved. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Brings in HtmlRenderer (Razor components to HTML) plus logging and dependency injection. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Turns the Notes section of a recipe from Markdown into HTML. -->
+    <PackageReference Include="Markdig" Version="0.40.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HenrysKitchen.Core\HenrysKitchen.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,9 @@
+@*
+    Stand-in text that hasn't been written yet, e.g. <Placeholder Value="To come" />.
+    The dashed underline style lives in site.css (.placeholder).
+*@
+<span class="placeholder" title="Placeholder text">@Value<span class="visually-hidden"> (placeholder)</span></span>
+
+@code {
+    [Parameter, EditorRequired] public string Value { get; set; } = "";
+}

@@ -108,3 +108,10 @@ kbd { font: 14px/1 var(--font-body); border: 1px solid var(--pencil); border-bot
 /* Phones and tablets: comfortable tap sizes for the small controls. */
 .check input { width: 22px; height: 22px; flex: 0 0 auto; }
 .step-tools .btn-link { min-width: 44px; min-height: 44px; }
+
+/* ---- 10. Where it's filed --------------------------------------------- */
+.filing-group { border: 0; margin: 0 0 14px; padding: 0; }
+.filing-group legend { font-weight: 700; font-size: 16px; padding: 0; margin-bottom: 6px; }
+.filing-boxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 2px 12px; }
+.filing-box { display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 16px; cursor: pointer; }
+.filing-box input { width: 20px; height: 20px; flex: 0 0 auto; accent-color: var(--ribbon); }

@@ -1,0 +1,40 @@
+{
+  "about": "Every category a recipe can be filed under. 'id' goes in recipe files (main_ingredients, collections, holidays) and in page addresses, so don't change it once used; 'name' is what readers see and can change any time.",
+  "ingredients": [
+    { "id": "beef", "name": "Beef" },
+    { "id": "pork", "name": "Pork" },
+    { "id": "chicken-turkey", "name": "Chicken & Turkey" },
+    { "id": "fish-seafood", "name": "Fish & Seafood" },
+    { "id": "eggs", "name": "Eggs" },
+    { "id": "cheese", "name": "Cheese" },
+    { "id": "potatoes", "name": "Potatoes" },
+    { "id": "pasta-noodles", "name": "Pasta & Noodles" },
+    { "id": "rice-grains", "name": "Rice & Grains" },
+    { "id": "bread", "name": "Bread" },
+    { "id": "vegetables", "name": "Vegetables" },
+    { "id": "fruit", "name": "Fruit" },
+    { "id": "chocolate", "name": "Chocolate" }
+  ],
+  "collections": [
+    { "id": "dinner-for-one", "name": "Dinner for One" },
+    { "id": "breakfast-brunch", "name": "Breakfast & Brunch" },
+    { "id": "snacks-party", "name": "Snacks & Party Food" },
+    { "id": "desserts-sweets", "name": "Desserts & Sweets" },
+    { "id": "drinks", "name": "Drinks" },
+    { "id": "vegan", "name": "Vegan" },
+    { "id": "fast-food-at-home", "name": "Fast Food at Home" },
+    { "id": "from-the-pantry", "name": "From the Pantry" },
+    { "id": "around-the-world", "name": "Around the World" }
+  ],
+  "holidays": [
+    { "id": "new-years", "name": "New Year’s" },
+    { "id": "super-bowl", "name": "Super Bowl" },
+    { "id": "valentines-day", "name": "Valentine’s Day" },
+    { "id": "easter", "name": "Easter" },
+    { "id": "4th-of-july", "name": "4th of July" },
+    { "id": "halloween", "name": "Halloween" },
+    { "id": "thanksgiving", "name": "Thanksgiving" },
+    { "id": "christmas", "name": "Christmas" },
+    { "id": "birthdays", "name": "Birthdays" }
+  ]
+}

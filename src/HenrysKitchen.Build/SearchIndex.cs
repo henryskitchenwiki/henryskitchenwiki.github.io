@@ -17,19 +17,20 @@ internal static class SearchIndex
 {
     public const string WordsFile = "content/search/search-words.json";
 
-    public static string Write(IReadOnlyList<Video> videos, IReadOnlyDictionary<string, Recipe> recipes, IReadOnlyList<IReadOnlyList<string>> searchWords)
+    public static string Write(SiteData site, IReadOnlyList<IReadOnlyList<string>> searchWords)
     {
-        var entries = videos.Select(video =>
+        var entries = site.Videos.Select(video =>
         {
-            var recipe = recipes.GetValueOrDefault(video.YoutubeId);
+            var recipe = site.RecipeFor(video);
             return new Dictionary<string, object?>
             {
                 ["id"] = video.Id,
-                ["title"] = TitleRules.Display(recipe?.Title ?? video.Title),
+                ["title"] = site.DisplayTitle(video),
                 ["subtitle"] = recipe?.Subtitle ?? "",
                 // Henry's full titles ("How to Make a Big Mac") stay searchable as aliases.
                 ["aliases"] = Join((recipe?.SearchAliases ?? []).Append(video.Title).Append(recipe?.Title ?? "")),
-                ["filing"] = Join(Filing(recipe)),
+                // Every episode is searchable by where it's filed, written up or not.
+                ["filing"] = Join(FilingWords(site.FiledUnder(video))),
                 ["ingredients"] = Join(recipe?.Ingredients),
                 ["intro"] = Join(recipe?.Intro.Paragraphs),
                 ["steps"] = Join(recipe?.Steps.Select(s => s.Text)),
@@ -114,14 +115,12 @@ internal static class SearchIndex
     /// <summary>The file's layout: { "about": "...", "groups": [["fry", "fries"], ...] }.</summary>
     private sealed record WordsFileLayout(string? About, List<List<string?>?>? Groups);
 
-    /// <summary>Where a recipe is filed, as readable words: "beef", "dinner for one", "thanksgiving".</summary>
-    private static IEnumerable<string> Filing(Recipe? recipe) =>
-        recipe is null
-            ? Enumerable.Empty<string>()
-            : recipe.MainIngredients.Concat(recipe.Collections)
-                // Holidays also count as "holiday", so the home page's Holidays circle finds them.
-                .Concat(recipe.Holidays.Select(h => h + " holiday"))
-                .Select(slug => slug.Replace('-', ' '));
+    /// <summary>
+    /// Where an episode is filed, as words people search for: "Chicken & Turkey",
+    /// "Thanksgiving holiday" (holidays also count as "holiday", for the home page's Holidays circle).
+    /// </summary>
+    private static IEnumerable<string> FilingWords(IEnumerable<Category> categories) =>
+        categories.Select(c => c.Kind == CategoryKind.Holiday ? c.Name + " holiday" : c.Name);
 
     private static string Join(IEnumerable<string>? parts) =>
         parts is null ? "" : string.Join(" \n", parts);

@@ -34,10 +34,13 @@ internal static class SiteBuilder
 
         var loaded = RecipeLoader.LoadFolder(Path.Combine(root, "content", "recipes"), root);
         var searchWords = SearchIndex.LoadWords(root, out var wordProblems);
+        var categoryProblems = new List<Problem>();
+        var categories = CategoryList.Load(root, categoryProblems);
+        var filing = categories.LoadFiling(root, catalog, categoryProblems);
 
         // 2. Check.
-        var checkedRecipes = RecipeValidator.Validate(loaded, catalog, options.Launch);
-        var problems = checkedRecipes.Problems.Concat(wordProblems).ToList();
+        var checkedRecipes = RecipeValidator.Validate(loaded, catalog, options.Launch, categories);
+        var problems = checkedRecipes.Problems.Concat(wordProblems).Concat(categoryProblems).ToList();
         ProblemReport.Print(problems);
         if (problems.Any(p => p.Severity == Severity.Error))
         {
@@ -45,9 +48,16 @@ internal static class SiteBuilder
             return 1;
         }
 
-        var recipes = checkedRecipes.Recipes;
+        var site = new SiteData
+        {
+            Catalog = catalog,
+            Recipes = checkedRecipes.Recipes,
+            Categories = categories,
+            FilingByPageId = filing,
+        };
+        var recipes = site.Recipes;
         var homeProblems = new List<Problem>();
-        var home = HomePageModel.Create(root, catalog, recipes, !options.Launch, homeProblems);
+        var home = HomePageModel.Create(root, site, !options.Launch, homeProblems);
         if (home is null)
         {
             ProblemReport.Print(homeProblems);
@@ -76,7 +86,7 @@ internal static class SiteBuilder
         for (var i = 0; i < videos.Count; i++)
         {
             var video = videos[i];
-            var model = new RecipePageModel(video, recipes.GetValueOrDefault(video.YoutubeId), MoreAround(i, videos, recipes), !options.Launch);
+            var model = site.PageModel(video, MoreAround(i, site), !options.Launch);
             var html = await renderer.RenderAsync<RecipePage>(new Dictionary<string, object?> { [nameof(RecipePage.Model)] = model });
             await WriteFileAsync(options.OutputFolder, $"recipes/{video.Id}/index.html", "<!DOCTYPE html>\n" + StripDoctype(html));
         }
@@ -84,8 +94,8 @@ internal static class SiteBuilder
         var homeHtml = await renderer.RenderAsync<HomePage>(new Dictionary<string, object?> { [nameof(HomePage.Model)] = home });
         await WriteFileAsync(options.OutputFolder, "index.html", "<!DOCTYPE html>\n" + StripDoctype(homeHtml));
 
-        await WriteFileAsync(options.OutputFolder, "assets/js/recipes-data.js", DeskData(videos, recipes));
-        await WriteFileAsync(options.OutputFolder, "assets/js/search-index.js", SearchIndex.Write(videos, recipes, searchWords));
+        await WriteFileAsync(options.OutputFolder, "assets/js/recipes-data.js", DeskData(site));
+        await WriteFileAsync(options.OutputFolder, "assets/js/search-index.js", SearchIndex.Write(site, searchWords));
 
         Console.WriteLine($"Done: {videos.Count} recipe pages written to {Path.GetRelativePath(root, options.OutputFolder)}/");
         return 0;
@@ -95,14 +105,14 @@ internal static class SiteBuilder
     /// "More from Henry’s Kitchen": up to three episodes aired around this one,
     /// nearest first, alternating before and after.
     /// </summary>
-    private static List<RecipeCard> MoreAround(int index, IReadOnlyList<Video> videos, IReadOnlyDictionary<string, Recipe> recipes) =>
+    private static List<RecipeCard> MoreAround(int index, SiteData site) =>
         new[] { index - 1, index + 1, index - 2, index + 2 }
-            .Where(i => i >= 0 && i < videos.Count)
+            .Where(i => i >= 0 && i < site.Videos.Count)
             .Take(3)
             .Select(i =>
             {
-                var video = videos[i];
-                var title = TitleRules.Display(recipes.GetValueOrDefault(video.YoutubeId)?.Title ?? video.Title);
+                var video = site.Videos[i];
+                var title = site.DisplayTitle(video);
                 var kicker = video.Episode is null
                     ? video.Aired.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)
                     : $"Episode {video.Episode}";
@@ -113,35 +123,59 @@ internal static class SiteBuilder
     /// <summary>
     /// The recipe list the Transcription Desk reads (assets/js/recipes-data.js).
     /// Short names keep the file small: t = title, v = YouTube video ID, d = aired date,
-    /// e = episode number, s = page id, l = length in seconds, w = 1 if written up.
+    /// e = episode number, s = page id, l = length in seconds, w = 1 if written up,
+    /// f = where it's filed ({ i: ingredients, c: collections, h: holidays }).
+    /// It also carries the category list, for the Desk's filing section.
     /// </summary>
-    private static string DeskData(IReadOnlyList<Video> videos, IReadOnlyDictionary<string, Recipe> recipes)
+    private static string DeskData(SiteData site)
     {
-        var entries = videos.Select(v => new Dictionary<string, object?>
+        var entries = site.Videos.Select(v =>
         {
-            ["t"] = TitleRules.Display(recipes.GetValueOrDefault(v.YoutubeId)?.Title ?? v.Title),
-            ["v"] = v.YoutubeId,
-            ["d"] = v.Aired.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
-            ["e"] = v.Episode ?? "",
-            ["s"] = v.Id,
-            ["l"] = v.LengthSeconds,
-            ["w"] = recipes.ContainsKey(v.YoutubeId) ? 1 : 0,
+            var filing = site.FilingFor(v);
+            return new Dictionary<string, object?>
+            {
+                ["t"] = site.DisplayTitle(v),
+                ["v"] = v.YoutubeId,
+                ["d"] = v.Aired.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+                ["e"] = v.Episode ?? "",
+                ["s"] = v.Id,
+                ["l"] = v.LengthSeconds,
+                ["w"] = site.RecipeFor(v) is null ? 0 : 1,
+                ["f"] = new Dictionary<string, IReadOnlyList<string>>
+                {
+                    ["i"] = filing.Ingredients,
+                    ["c"] = filing.Collections,
+                    ["h"] = filing.Holidays,
+                },
+            };
         });
+
+        var categories = new Dictionary<string, object>
+        {
+            ["ingredients"] = CategoryEntries(site.Categories, CategoryKind.Ingredient),
+            ["collections"] = CategoryEntries(site.Categories, CategoryKind.Collection),
+            ["holidays"] = CategoryEntries(site.Categories, CategoryKind.Holiday),
+        };
 
         // The default encoder escapes characters such as < and & so nothing in a title
         // can break out of the script; UnicodeRanges.All just keeps letters like é readable.
-        var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions
+        var jsonOptions = new JsonSerializerOptions
         {
             Encoder = JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All),
-        });
+        };
 
         return new StringBuilder()
             .AppendLine("// Written by the site build (src/HenrysKitchen.Build). Do not edit by hand.")
             .AppendLine("// t = title, v = YouTube video ID, d = date, e = Henry's episode number,")
-            .AppendLine("// s = page id, l = episode length in seconds, w = 1 if already on the site.")
-            .Append("window.HK_RECIPES = ").Append(json).AppendLine(";")
+            .AppendLine("// s = page id, l = episode length in seconds, w = 1 if already on the site,")
+            .AppendLine("// f = where it's filed (i = ingredients, c = collections, h = holidays).")
+            .Append("window.HK_RECIPES = ").Append(JsonSerializer.Serialize(entries, jsonOptions)).AppendLine(";")
+            .Append("window.HK_CATEGORIES = ").Append(JsonSerializer.Serialize(categories, jsonOptions)).AppendLine(";")
             .ToString();
     }
+
+    private static List<Dictionary<string, string>> CategoryEntries(CategoryList list, CategoryKind kind) =>
+        list.OfKind(kind).Select(c => new Dictionary<string, string> { ["id"] = c.Id, ["name"] = c.Name }).ToList();
 
     /// <summary>
     /// Empties the output folder. As a safety catch it only ever deletes a folder inside

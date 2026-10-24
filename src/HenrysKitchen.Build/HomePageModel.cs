@@ -27,34 +27,34 @@ public sealed class HomePageModel
     /// Builds the home page. Returns null and adds a problem if content/home.json names
     /// a recipe that doesn't exist or isn't written up.
     /// </summary>
-    public static HomePageModel? Create(string repoRoot, VideoCatalog catalog, IReadOnlyDictionary<string, Recipe> recipes, bool noIndex, List<Problem> problems)
+    public static HomePageModel? Create(string repoRoot, SiteData site, bool noIndex, List<Problem> problems)
     {
         var featuredId = ReadFeaturedId(repoRoot, problems);
-        var featuredVideo = catalog.Videos.FirstOrDefault(v => v.Id == featuredId);
-        var featuredRecipe = featuredVideo is null ? null : recipes.GetValueOrDefault(featuredVideo.YoutubeId);
+        var featuredVideo = site.Videos.FirstOrDefault(v => v.Id == featuredId);
+        var featuredRecipe = featuredVideo is null ? null : site.RecipeFor(featuredVideo);
         if (featuredVideo is null || featuredRecipe is null)
         {
             problems.Add(Problem.Error(SettingsFile, $"\"{featuredId}\" isn't a written-up recipe, so it can't be featured. Use the page id of one that is, e.g. shit-on-a-shingle."));
             return null;
         }
 
-        var latest = catalog.Videos
+        var latest = site.Videos
             .OrderByDescending(v => v.Aired)
             .Take(LatestCount)
             .Select(v => new LatestItem(
-                TitleRules.Display(recipes.GetValueOrDefault(v.YoutubeId)?.Title ?? v.Title),
+                site.DisplayTitle(v),
                 $"/recipes/{v.Id}/", v.YoutubeId, v.Episode,
                 v.Aired.ToString("MMM d, yyyy", CultureInfo.InvariantCulture)))
             .ToList();
 
         // Newest written-up recipes, apart from the featured one.
-        var box = catalog.Videos
-            .Where(v => v.Id != featuredId && recipes.ContainsKey(v.YoutubeId))
+        var box = site.Videos
+            .Where(v => v.Id != featuredId && site.RecipeFor(v) is not null)
             .OrderByDescending(v => v.Aired)
             .Take(RecipeBoxCount)
             .Select(v =>
             {
-                var model = new RecipePageModel(v, recipes[v.YoutubeId], [], noIndex);
+                var model = site.PageModel(v, [], noIndex);
                 var kicker = model.Filed?.Name ?? (v.Episode is null ? model.AiredText : $"Episode {v.Episode}");
                 return new RecipeCard(model.Title, model.PageUrl, v.YoutubeId, kicker);
             })
@@ -62,7 +62,7 @@ public sealed class HomePageModel
 
         return new HomePageModel
         {
-            Featured = new RecipePageModel(featuredVideo, featuredRecipe, [], noIndex),
+            Featured = site.PageModel(featuredVideo, [], noIndex),
             Latest = latest,
             RecipeBox = box,
             NoIndex = noIndex,

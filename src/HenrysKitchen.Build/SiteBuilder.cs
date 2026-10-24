@@ -11,7 +11,7 @@ namespace HenrysKitchen.Build;
 ///   1. read data/videos.json and content/recipes/*.md
 ///   2. check them, and stop if anything has to be fixed
 ///   3. copy static/ (hand-written pages, styles, scripts, images, the Desk)
-///   4. write a page for every episode, the Desk's recipe list and the search index
+///   4. write the home page, a page for every episode, the Desk's recipe list and the search index
 /// </summary>
 internal static class SiteBuilder
 {
@@ -46,6 +46,15 @@ internal static class SiteBuilder
         }
 
         var recipes = checkedRecipes.Recipes;
+        var homeProblems = new List<Problem>();
+        var home = HomePageModel.Create(root, catalog, recipes, !options.Launch, homeProblems);
+        if (home is null)
+        {
+            ProblemReport.Print(homeProblems);
+            Console.WriteLine("Stopped: fix the errors above, then build again.");
+            return 1;
+        }
+
         Console.WriteLine($"{catalog.Videos.Count} episodes, {recipes.Count} written up, {catalog.Videos.Count - recipes.Count} still needed.");
         if (options.CheckOnly)
         {
@@ -72,6 +81,9 @@ internal static class SiteBuilder
             await WriteFileAsync(options.OutputFolder, $"recipes/{video.Id}/index.html", "<!DOCTYPE html>\n" + StripDoctype(html));
         }
 
+        var homeHtml = await renderer.RenderAsync<HomePage>(new Dictionary<string, object?> { [nameof(HomePage.Model)] = home });
+        await WriteFileAsync(options.OutputFolder, "index.html", "<!DOCTYPE html>\n" + StripDoctype(homeHtml));
+
         await WriteFileAsync(options.OutputFolder, "assets/js/recipes-data.js", DeskData(videos, recipes));
         await WriteFileAsync(options.OutputFolder, "assets/js/search-index.js", SearchIndex.Write(videos, recipes, searchWords));
 
@@ -90,7 +102,7 @@ internal static class SiteBuilder
             .Select(i =>
             {
                 var video = videos[i];
-                var title = recipes.GetValueOrDefault(video.YoutubeId)?.Title ?? video.Title;
+                var title = TitleRules.Display(recipes.GetValueOrDefault(video.YoutubeId)?.Title ?? video.Title);
                 var kicker = video.Episode is null
                     ? video.Aired.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)
                     : $"Episode {video.Episode}";
@@ -107,7 +119,7 @@ internal static class SiteBuilder
     {
         var entries = videos.Select(v => new Dictionary<string, object?>
         {
-            ["t"] = v.Title,
+            ["t"] = TitleRules.Display(recipes.GetValueOrDefault(v.YoutubeId)?.Title ?? v.Title),
             ["v"] = v.YoutubeId,
             ["d"] = v.Aired.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
             ["e"] = v.Episode ?? "",

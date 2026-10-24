@@ -208,7 +208,7 @@ nav.kicker a { text-decoration: underline; text-underline-offset: 3px; }
 .btn-outline { background: var(--plate); color: var(--cast-iron); border: 2px solid var(--cast-iron); }
 .btn-small { min-height: 44px; padding: 0 14px; font-size: 16px; border-width: 1px; border-color: var(--pencil); }
 
-.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; }
 .card { position: relative; display: flex; flex-direction: column; gap: 8px; }
 .card-title { font-family: var(--font-heading); font-size: 22px; font-weight: 600; line-height: 1.2; text-decoration: none; }
 /* The title's link covers the whole card, so the picture is clickable too. */

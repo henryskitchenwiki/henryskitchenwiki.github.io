@@ -25,9 +25,10 @@ internal static class SearchIndex
             return new Dictionary<string, object?>
             {
                 ["id"] = video.Id,
-                ["title"] = recipe?.Title ?? video.Title,
+                ["title"] = TitleRules.Display(recipe?.Title ?? video.Title),
                 ["subtitle"] = recipe?.Subtitle ?? "",
-                ["aliases"] = Join(recipe?.SearchAliases),
+                // Henry's full titles ("How to Make a Big Mac") stay searchable as aliases.
+                ["aliases"] = Join((recipe?.SearchAliases ?? []).Append(video.Title).Append(recipe?.Title ?? "")),
                 ["filing"] = Join(Filing(recipe)),
                 ["ingredients"] = Join(recipe?.Ingredients),
                 ["intro"] = Join(recipe?.Intro.Paragraphs),

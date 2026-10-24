@@ -1,0 +1,4 @@
+{
+  "about": "Home page settings. 'featured' is the page id of the recipe shown large at the top (it must be written up). The Latest and the Recipe Box fill themselves from the episodes and recipes.",
+  "featured": "shit-on-a-shingle"
+}

@@ -10,6 +10,8 @@
  *   - treats plurals and singulars alike (raviolis / ravioli, potatoes / potato)
  *   - finds "FrenchToast" from "french toast" and the other way round
  *   - finds recipes by episode number ("70", "ep 70", "episode 70")
+ *   - also finds related words from content/search-words.json ("fry" finds "fries")
+ *   - forgives small typos in longer words, and suggests the right spelling
  *   - splits results into recipes matching every word and close matches
  *
  * Works in the browser (window.HKSearch) and in Node, for tests/search.
@@ -93,12 +95,41 @@
     return [...new Set(words(query).map(stem).filter(Boolean))];
   }
 
+  /** How many letters a word can be off by and still match: none for short words. */
+  function typoAllowance(term) {
+    if (term.length >= 8) return 2;
+    if (term.length >= 5) return 1;
+    return 0;
+  }
+
+  /** The number of single-letter changes to turn one word into another, stopping early past max. */
+  function editDistance(a, b, max) {
+    if (Math.abs(a.length - b.length) > max) return max + 1;
+    let previous = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+      const current = [i];
+      let best = i;
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        current[j] = Math.min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost);
+        best = Math.min(best, current[j]);
+      }
+      if (best > max) return max + 1;
+      previous = current;
+    }
+    return previous[b.length];
+  }
+
   /**
    * Builds a search over the recipe list from assets/js/search-index.js.
    * Each recipe has: id (page id), title, plus text fields, and display details
    * v (video ID), e (episode), d (date).
+   *
+   * relatedWords is the list from content/search-words.json: groups of words
+   * that mean the same thing, e.g. ["fry", "fries"]. A search for one also finds
+   * the others, counting a little less than the word typed.
    */
-  function create(recipes) {
+  function create(recipes, relatedWords) {
     const index = new MiniSearch({
       fields: Object.keys(FIELD_WEIGHTS),
       storeFields: ['title', 'v', 'e', 'd'],
@@ -114,9 +145,32 @@
     });
     index.addAll(recipes);
 
+    // Related words: each word (as stored) -> the other words in its group.
+    const related = new Map();
+    for (const group of relatedWords || []) {
+      const stems = [...new Set(group.flatMap(words).map(stem).filter(Boolean))];
+      for (const word of stems) {
+        const others = related.get(word) || new Set();
+        for (const other of stems) if (other !== word) others.add(other);
+        related.set(word, others);
+      }
+    }
+
+    // Every word used anywhere on the site, with how often, for "Did you mean".
+    const vocabulary = new Map();
+    for (const r of recipes) {
+      for (const field of Object.keys(FIELD_WEIGHTS)) {
+        for (const word of words(r[field])) {
+          if (word.length >= 4 && !/\d/.test(word)) vocabulary.set(word, (vocabulary.get(word) || 0) + 1);
+        }
+      }
+    }
+    const knownStems = new Set([...vocabulary.keys()].map(stem).filter(Boolean));
+
     /**
-     * Returns { matches, closeMatches }: recipes matching every word of the search,
-     * best first, then recipes matching only some of them.
+     * Returns { matches, closeMatches, suggestion }: recipes matching every word of
+     * the search (best first), recipes matching only some of them, and a corrected
+     * spelling of the search when a word looks mistyped (otherwise null).
      */
     function search(query) {
       const text = String(query || '').trim();
@@ -124,19 +178,56 @@
       if (episode) {
         const number = String(Number(episode[1]));
         const byEpisode = recipes.filter((r) => r.e === number).map(toResult);
-        if (byEpisode.length) return { matches: byEpisode, closeMatches: [] };
+        if (byEpisode.length) return { matches: byEpisode, closeMatches: [], suggestion: null };
       }
 
       const wanted = searchTerms(text);
-      if (!wanted.length) return { matches: [], closeMatches: [] };
+      if (!wanted.length) return { matches: [], closeMatches: [], suggestion: null };
+
+      // Each word typed, plus its related words. A word counts as found if any of them matched.
+      const accepts = new Map(wanted.map((term) => [term, new Set([term, ...(related.get(term) || [])])]));
+      const extra = [...new Set(wanted.flatMap((term) => [...accepts.get(term)]))].filter((t) => !wanted.includes(t));
+
+      const hits = index.search([...wanted, ...extra].join(' '), {
+        // Related words count a little under half as much as the words typed.
+        boostTerm: (term) => (wanted.includes(term) ? 1 : 0.4),
+        // Small typos are forgiven in longer words the person typed.
+        fuzzy: (term) => (wanted.includes(term) ? typoAllowance(term) || false : false),
+        // Related words must match whole: "bread" finds "toast" but not "toasted".
+        prefix: (term) => wanted.includes(term) && term.length >= 4,
+      });
 
       const matches = [];
       const closeMatches = [];
-      for (const hit of index.search(text)) {
+      for (const hit of hits) {
         const found = new Set(hit.queryTerms);
-        (wanted.every((term) => found.has(term)) ? matches : closeMatches).push(toResult(hit));
+        const all = wanted.every((term) => [...accepts.get(term)].some((t) => found.has(t)));
+        (all ? matches : closeMatches).push(toResult(hit));
       }
-      return { matches, closeMatches };
+      return { matches, closeMatches, suggestion: suggestSpelling(text) };
+    }
+
+    /** "worchestershire sauce" -> "worcestershire sauce", or null if every word is known. */
+    function suggestSpelling(text) {
+      let changed = false;
+      const corrected = words(text).map((word) => {
+        const allowance = typoAllowance(word);
+        const stemmed = stem(word);
+        if (!allowance || !stemmed || vocabulary.has(word) || knownStems.has(stemmed) || related.has(stemmed)) return word;
+        let best = null;
+        let bestDistance = allowance + 1;
+        for (const [candidate, count] of vocabulary) {
+          const distance = editDistance(word, candidate, allowance);
+          if (distance < bestDistance || (distance === bestDistance && best && count > vocabulary.get(best))) {
+            best = candidate;
+            bestDistance = distance;
+          }
+        }
+        if (!best || bestDistance > allowance) return word;
+        changed = true;
+        return best;
+      });
+      return changed ? corrected.join(' ') : null;
     }
 
     return { search };

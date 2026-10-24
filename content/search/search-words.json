@@ -1,0 +1,19 @@
+{
+  "about": "Words that mean the same thing in a search. A search for any word in a group also finds the others (counting a little less). One word per entry; for other names of a single dish, use that recipe's search_aliases instead. Keep groups to true stand-ins: putting 'pie' with 'cake' would make every pie search show cakes.",
+  "groups": [
+    ["fry", "fries"],
+    ["bread", "toast", "loaf"],
+    ["burger", "hamburger", "patty"],
+    ["hotdog", "frank", "frankfurter", "weenie", "wiener"],
+    ["chili", "chilli", "chile"],
+    ["donut", "doughnut"],
+    ["bbq", "barbecue", "barbeque"],
+    ["omelet", "omelette"],
+    ["kebab", "kabob", "kebob"],
+    ["jello", "gelatin"],
+    ["cannabis", "weed", "marijuana"],
+    ["potato", "spud", "tater"],
+    ["christmas", "xmas"],
+    ["veggie", "vegetable"]
+  ]
+}

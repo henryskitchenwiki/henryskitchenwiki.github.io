@@ -26,6 +26,7 @@ the site going: recipes go in through pull requests, and GitHub builds and publi
 |---|---|---|
 | `content/recipes/` | One file per written-up recipe, e.g. `big-mac.md` | Writers, through the Desk |
 | `content/_templates/` | A blank recipe file, for writing one by hand | Rarely |
+| `content/search/search-words.json` | Words that mean the same thing in a search, e.g. fry / fries | Anyone who finds a search that misses |
 | `data/videos.json` | Every Henry’s Kitchen recipe episode: title, date, length | The weekly YouTube check (coming); otherwise by hand, carefully |
 | `static/` | Hand-written pages (home, About, search, the Desk), styles, scripts, images | Site maintainers |
 | `src/HenrysKitchen.Core/` | The rules: what a recipe is, reading recipe files, checking them | Site maintainers |
@@ -90,6 +91,11 @@ filing and `search_aliases`). `static/assets/js/search-engine.js` searches it us
   `tests/search/search-cases.json`, then adjust `search-engine.js` until the tests pass:
   `node tests/search/run-search-tests.js _site` after building.
 - **Another name for a dish** goes in that recipe’s `search_aliases`.
+- **Words that mean the same thing** (donut / doughnut, fry / fries) go in
+  `content/search/search-words.json`, one word per entry. Keep groups to true stand-ins:
+  putting “pie” with “cake” would make every pie search show cakes.
+- Small typos in longer words are forgiven, and the page offers “Did you mean…?”
+  using words that appear somewhere on the site.
 - **Updating MiniSearch:** see the instructions at the top of `tools/build-minisearch.mjs`.
 
 ## Placeholder text

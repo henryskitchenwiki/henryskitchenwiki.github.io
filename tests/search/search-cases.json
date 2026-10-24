@@ -1,5 +1,5 @@
 {
-  "about": "Searches the site should handle. Each case gives what's typed and the recipe page id(s) expected. 'top' must be the first result; 'includes' must appear among the results matching every word. Add a case whenever a search turns up the wrong thing.",
+  "about": "Searches the site should handle. Each case gives what's typed and the recipe page id(s) expected. 'top' must be the first result; 'includes' must appear among the results matching every word; 'suggests' is the expected 'Did you mean' text (null for none). Add a case whenever a search turns up the wrong thing.",
   "cases": [
     { "query": "french toast", "top": "killer-oven-baked-french-toast", "includes": ["green-chili-verde-frenchtoast"] },
     { "query": "frenchtoast", "includes": ["killer-oven-baked-french-toast", "green-chili-verde-frenchtoast"] },
@@ -20,6 +20,14 @@
     { "query": "mcbreakfast", "includes": ["turkey-mcbreakfast-sandwich"] },
     { "query": "70", "includes": ["shit-on-a-shingle"] },
     { "query": "ep 70", "includes": ["shit-on-a-shingle"] },
-    { "query": "episode 47", "top": "big-mac" }
+    { "query": "episode 47", "top": "big-mac" },
+    { "query": "fry", "includes": ["french-fries-party-tray"] },
+    { "query": "doughnut", "includes": ["delicious-chocolate-donut-recipe"] },
+    { "query": "chilli", "includes": ["henrys-anytime-chili-for-one", "green-chili-verde-frenchtoast"] },
+    { "query": "frankfurter", "includes": ["4th-of-july-fish-franks"] },
+    { "query": "raviolli", "includes": ["authentic-st-louis-toasted-raviolis"], "suggests": "raviolis" },
+    { "query": "worchestershire", "includes": ["shit-on-a-shingle"], "suggests": "worcestershire" },
+    { "query": "french toast", "suggests": null },
+    { "query": "pie", "suggests": null }
   ]
 }

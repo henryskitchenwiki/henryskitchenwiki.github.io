@@ -30,6 +30,9 @@
   const REPO_EDIT_URL = 'https://github.com/henryskitchenwiki/henryskitchenwiki.github.io/edit/main/';
   const SITE_VERSION_FOLDER = '/assets/data/recipes/';
   const IS_MAC = /Mac|iPhone|iPad/.test(navigator.userAgent);
+  const PULL_REQUESTS_URL = 'https://github.com/henryskitchenwiki/henryskitchenwiki.github.io/pulls?q=is%3Apr+author%3A%40me';
+  const ONE_COLUMN = window.matchMedia('(max-width: 980px)');   // matches desk.css
+  const UNDO_SECONDS = 8;
   const RECIPE_FOLDER = 'content/recipes/';
   const MAX_URL_LENGTH = 7500;          // longer links can be cut off by browsers or GitHub
   const NUDGE_SECONDS = 3;
@@ -128,6 +131,31 @@
       .join('\n');
   }
 
+  /** "2020-01-10" -> "Jan 10, 2020", like the rest of the site. */
+  function friendlyDate(iso) {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  /** The step boxes, without any "Step removed · Undo" lines between them. */
+  function stepItems() {
+    return Array.from($('steps').querySelectorAll(':scope > .step-item'));
+  }
+
+  /** Nothing to watch or fill in until a recipe is picked. */
+  function setLocked(locked) {
+    for (const part of document.querySelectorAll('[data-needs-recipe]')) {
+      part.inert = locked;
+      part.classList.toggle('is-locked', locked);
+    }
+  }
+
+  /** The draft line in the header (and in the docked player on small screens). */
+  function setDraftStatus(text) {
+    $('draft-status').textContent = text;
+    $('dock-status').textContent = text;
+  }
+
   // ---- 1. Pick a recipe ----------------------------------------------------
   /** Lowercase, without apostrophes, asterisks or accents, so "henrys" finds "Henry’s". */
   function searchable(text) {
@@ -191,6 +219,7 @@
     const fromAddress = new URLSearchParams(window.location.search).get('v');
     const start = recipes.some((r) => r.v === fromAddress) ? fromAddress : storageGet(LAST_RECIPE_KEY);
     if (start && recipes.some((r) => r.v === start)) chooseRecipe(start);
+    else chooseRecipe(null);
     filterPicker();
   }
 
@@ -202,7 +231,8 @@
     siteHash = '';
     clearForm();
     showEditStatus('');
-    if (!current) { $('recipe-facts').textContent = ''; return; }
+    setLocked(!current);
+    if (!current) { $('recipe-facts').textContent = 'Pick a recipe to start.'; setDraftStatus(''); return; }
 
     storageSet(LAST_RECIPE_KEY, current.v);
     const url = new URL(window.location.href);
@@ -211,7 +241,7 @@
 
     $('recipe-facts').textContent =
       current.t + ' · ' + (current.e ? `Episode ${current.e} · ` : '') +
-      `Aired ${current.d} · ${formatTime(current.l)} long · File name: ${current.s}.md`;
+      `Aired ${friendlyDate(current.d)} · ${formatTime(current.l)} long · File name: ${current.s}.md`;
     $('title').value = current.t.replace(/^how to make\s+(?:(?:a|an|the)\s+)?/i, '');
     loadVideo(current.v);
     $('get-transcript').href = 'https://www.youtube.com/watch?v=' + encodeURIComponent(current.v);
@@ -225,11 +255,11 @@
       const draft = readDraft();
       if (draft) {
         fillForm(draft);
-        $('draft-status').textContent = `Picked up your draft from ${when(draft.savedAt)}.`;
+        setDraftStatus(`Picked up your draft from ${when(draft.savedAt)}`);
       } else {
-        $('draft-status').textContent = '';
+        setDraftStatus('');
       }
-      if ($('steps').children.length === 0) addStep();
+      if (stepItems().length === 0) addStep();
       updatePreview();
     }
   }
@@ -274,7 +304,7 @@
         else showEditStatus('Editing the version on the site.');
       }
     }
-    if ($('steps').children.length === 0) addStep();
+    if (stepItems().length === 0) addStep();
     updatePreview();
   }
 
@@ -491,11 +521,41 @@
       const text = document.createElement('span');
       text.className = 'seg-text';
       text.textContent = seg.text;
-      li.append(text);
+      const used = document.createElement('span');
+      used.className = 'seg-used';
+      li.append(text, used);
       li.addEventListener('click', (e) => onSegmentClick(e, i, check));
       box.append(li);
     });
     $('segment-actions').hidden = list.length === 0;
+    markUsedLines();
+  }
+
+  /** Letters and numbers only, for comparing transcript lines with what's in the form. */
+  function plain(text) {
+    return searchable(tidy(text)).replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+
+  /**
+   * Greys out transcript lines that are already in the recipe and says where:
+   * Intro, Ingredients or Step 2. It compares the words, so it stays right when
+   * steps are moved, edited or removed, and after a draft is reopened.
+   */
+  function markUsedLines() {
+    const items = $('segments').children;
+    if (!items.length) return;
+    const places = [
+      ['Intro', plain($('intro-text').value)],
+      ['Ingredients', plain($('ingredients').value)],
+      ...stepItems().map((item, i) => [`Step ${i + 1}`, plain(item.querySelector('.step-text').value)])
+    ];
+    segments.forEach((seg, i) => {
+      if (seg.plain === undefined) seg.plain = plain(seg.text);
+      const words = seg.plain;
+      const found = words.length >= 3 ? places.find(([, text]) => ` ${text} `.includes(` ${words} `)) : null;
+      items[i].classList.toggle('is-used', Boolean(found));
+      items[i].querySelector('.seg-used').textContent = found ? found[0] : '';
+    });
   }
 
   function onSegmentClick(event, index, check) {
@@ -549,7 +609,7 @@
     const first = segments[picked[0]];
     const text = tidy(picked.map((i) => segments[i].text).join(' '));
     // Reuse an empty step box if there is one at the end.
-    const steps = $('steps').children;
+    const steps = stepItems();
     const last = steps[steps.length - 1];
     const item = last && !last.querySelector('.step-text').value.trim() ? last : addStep();
     item.querySelector('.step-text').value = text;
@@ -615,22 +675,58 @@
   }
 
   function renumberSteps() {
-    Array.from($('steps').children).forEach((item, i) => {
+    stepItems().forEach((item, i) => {
       const n = i + 1;
       item.querySelector('.step-number').textContent = n;
       item.querySelector('.step-text').setAttribute('aria-label', `Step ${n}`);
       item.querySelector('.step-time').setAttribute('aria-label', `Step ${n} starts at`);
+      item.querySelector('.step-remove').setAttribute('aria-label', `Remove step ${n}`);
     });
   }
 
   function onStepTool(button) {
     const item = button.closest('.step-item');
     const action = button.dataset.step;
-    if (action === 'remove') item.remove();
-    if (action === 'up' && item.previousElementSibling) item.after(item.previousElementSibling);
-    if (action === 'down' && item.nextElementSibling) item.before(item.nextElementSibling);
+    if (action === 'remove') removeStep(item);
+    if (action === 'up') { const before = previousStep(item); if (before) before.before(item); }
+    if (action === 'down') { const after = nextStep(item); if (after) after.after(item); }
+    if (action !== 'remove') button.focus();
     renumberSteps();
     changed();
+  }
+
+  function previousStep(item) {
+    let el = item.previousElementSibling;
+    while (el && !el.classList.contains('step-item')) el = el.previousElementSibling;
+    return el;
+  }
+
+  function nextStep(item) {
+    let el = item.nextElementSibling;
+    while (el && !el.classList.contains('step-item')) el = el.nextElementSibling;
+    return el;
+  }
+
+  /** Swaps a step for a "Step 3 removed · Undo" line, which goes away on its own after a few seconds. */
+  function removeStep(item) {
+    const number = stepItems().indexOf(item) + 1;
+    const note = document.createElement('li');
+    note.className = 'step-removed';
+    const undo = document.createElement('button');
+    undo.type = 'button';
+    undo.className = 'btn btn-small btn-link';
+    undo.textContent = 'Undo';
+    note.append(document.createTextNode(`Step ${number} removed.`), undo);
+    item.replaceWith(note);
+    undo.focus();   // so keyboard users aren't dropped at the top of the page
+    const timer = window.setTimeout(() => note.remove(), UNDO_SECONDS * 1000);
+    undo.addEventListener('click', () => {
+      window.clearTimeout(timer);
+      note.replaceWith(item);
+      renumberSteps();
+      changed();
+      item.querySelector('.step-text').focus();
+    });
   }
 
   function addSong(song) {
@@ -660,7 +756,7 @@
       ingredientsAt: $('ingredients-at').value.trim(),
       servings: $('servings').value.trim(),
       ingredients: $('ingredients').value.split('\n').map((s) => s.trim()).filter(Boolean),
-      steps: Array.from($('steps').children).map((item) => ({
+      steps: stepItems().map((item) => ({
         text: item.querySelector('.step-text').value.replace(/\s+/g, ' ').trim(),
         at: item.querySelector('.step-time').value.trim()
       })).filter((s) => s.text || s.at),
@@ -677,57 +773,76 @@
   }
 
   // ---- Checking ------------------------------------------------------------
-  /** Returns { problems: [], warnings: [] }. Problems block sending; warnings don't. */
+  /**
+   * Returns { problems: [], warnings: [] }, each item { text, target }. The target is
+   * the box to fix, so the list can take the writer straight there. Problems block
+   * sending; warnings don't.
+   */
   function check(form) {
     const problems = [];
     const warnings = [];
-    if (!current) problems.push('Pick a recipe at the top of the page first.');
-    if (current && current.w && !siteVersion) problems.push('The version on the site didn’t load. Reload the page and try again.');
-    if (!form.title) problems.push('The recipe needs a title.');
-    if (!form.handle) problems.push('Add your name in step 4.');
-    if (!form.introParagraphs.length) problems.push('Add Henry’s introduction.');
-    if (!form.ingredients.length) problems.push('Add at least one ingredient.');
-    if (!form.steps.some((s) => s.text)) problems.push('Add at least one step.');
-    if (/\[\[|\]\]/.test(JSON.stringify(form))) problems.push('Remove the [[ ]] placeholder marks before sending.');
+    const problem = (text, target) => problems.push({ text, target: target || null });
+    const warning = (text, target) => warnings.push({ text, target: target || null });
+    const steps = stepItems();
+
+    if (!current) problem('Pick a recipe at the top of the page first.', $('recipe-search'));
+    if (current && current.w && !siteVersion) problem('The version on the site didn’t load. Reload the page and try again.');
+    if (!form.title) problem('The recipe needs a title.', $('title'));
+    if (!form.handle) problem('Add your name.', $('handle'));
+    if (!form.introParagraphs.length) problem('Add Henry’s introduction.', $('intro-text'));
+    if (!form.ingredients.length) problem('Add at least one ingredient.', $('ingredients'));
+    if (!form.steps.some((s) => s.text)) problem('Add at least one step.', steps[0] ? steps[0].querySelector('.step-text') : $('add-step'));
+    const marked = Array.from(document.querySelectorAll('#recipe-form .field')).find((box) => /\[\[|\]\]/.test(box.value));
+    if (marked) problem('Remove the [[ ]] placeholder marks before sending.', marked);
 
     const length = current ? current.l : Infinity;
-    const timeChecks = [
-      ['intro-start', form.introStart, 'Introduction start'],
-      ['intro-end', form.introEnd, 'Introduction end'],
-      ['ingredients-at', form.ingredientsAt, 'Ingredients time']
+    const timeBoxes = [
+      [$('intro-start'), 'Introduction start'],
+      [$('intro-end'), 'Introduction end'],
+      [$('ingredients-at'), 'Ingredients time'],
+      ...steps.map((item, i) => [item.querySelector('.step-time'), `Step ${i + 1} time`])
     ];
-    for (const [id, value, label] of timeChecks) {
-      const ok = checkTime(value, label, length, problems);
-      $(id).classList.toggle('is-bad', !ok);
+    for (const [box, label] of timeBoxes) {
+      const text = timeProblem(box.value.trim(), label, length);
+      box.classList.toggle('is-bad', Boolean(text));
+      if (text) problem(text, box);
     }
-    Array.from($('steps').children).forEach((item, i) => {
-      const box = item.querySelector('.step-time');
-      box.classList.toggle('is-bad', !checkTime(box.value, `Step ${i + 1} time`, length, problems));
-    });
 
     const start = parseTime(form.introStart);
     const end = parseTime(form.introEnd);
-    if (start !== null && end !== null && end <= start) problems.push('The introduction has to end after it starts.');
-    if (!form.introEnd) warnings.push('No end time for the introduction yet.');
-    if (!form.filing.i.length) warnings.push('Not filed under a main ingredient.');
-    if (form.filing.i.length > 3) warnings.push('More than 3 main ingredients.');
+    if (start !== null && end !== null && end <= start) problem('The introduction has to end after it starts.', $('intro-end'));
+    if (!form.introEnd) warning('No end time for the introduction yet.', $('intro-end'));
+    const firstIngredientBox = document.querySelector('.filing-group[data-kind="i"] input');
+    if (!form.filing.i.length) warning('Not filed under a main ingredient.', firstIngredientBox);
+    if (form.filing.i.length > 3) warning('More than 3 main ingredients.', firstIngredientBox);
 
-    const untimed = form.steps.filter((s) => s.text && !s.at).length;
-    if (untimed) warnings.push(`${untimed} step${untimed === 1 ? ' has' : 's have'} no time.`);
-    const times = form.steps.map((s) => parseTime(s.at)).filter((t) => t !== null && !Number.isNaN(t));
-    if (times.some((t, i) => i > 0 && t < times[i - 1])) warnings.push('Some step times are out of order.');
-    for (const song of form.songs) {
-      if (song.link && !/^https:\/\/music\.youtube\.com\//.test(song.link)) problems.push(`The link for “${song.title}” should start with https://music.youtube.com/`);
+    const untimed = steps.filter((item) => item.querySelector('.step-text').value.trim() && !item.querySelector('.step-time').value.trim());
+    if (untimed.length) warning(`${untimed.length} step${untimed.length === 1 ? ' has' : 's have'} no time.`, untimed[0].querySelector('.step-time'));
+    let previous = null;
+    for (const item of steps) {
+      const box = item.querySelector('.step-time');
+      const t = parseTime(box.value);
+      if (t === null || Number.isNaN(t)) continue;
+      if (previous !== null && t < previous) { warning('Some step times are out of order.', box); break; }
+      previous = t;
+    }
+    for (const item of $('songs').children) {
+      const title = item.querySelector('.song-title').value.trim();
+      const link = item.querySelector('.song-link');
+      if (title && link.value.trim() && !/^https:\/\/music\.youtube\.com\//.test(link.value.trim())) {
+        problem(`The link for “${title}” should start with https://music.youtube.com/`, link);
+      }
     }
     return { problems, warnings };
   }
 
-  function checkTime(value, label, length, problems) {
+  /** What's wrong with a time box, or '' if it's fine (blank is fine). */
+  function timeProblem(value, label, length) {
     const seconds = parseTime(value);
-    if (seconds === null) return true;
-    if (Number.isNaN(seconds)) { problems.push(`${label} “${value}” isn’t a time. Use minutes:seconds, like 1:42.`); return false; }
-    if (seconds > length) { problems.push(`${label} ${value} is past the end of the episode (${formatTime(length)}).`); return false; }
-    return true;
+    if (seconds === null) return '';
+    if (Number.isNaN(seconds)) return `${label} “${value}” isn’t a time. Use minutes:seconds, like 1:42.`;
+    if (seconds > length) return `${label} ${value} is past the end of the episode (${formatTime(length)}).`;
+    return '';
   }
 
   function showCheck(result) {
@@ -744,9 +859,26 @@
     box.append(heading);
     const list = document.createElement('ul');
     list.className = 'check-list';
-    for (const text of result.problems) list.append(listItem(text, 'check-problem'));
-    for (const text of result.warnings) list.append(listItem(text, 'check-warning'));
+    for (const item of result.problems) list.append(checkItem(item, 'check-problem'));
+    for (const item of result.warnings) list.append(checkItem(item, 'check-warning'));
     if (list.children.length) box.append(list);
+  }
+
+  /** One line of the check. With a target it's a button that goes to the box to fix. */
+  function checkItem(item, className) {
+    if (!item.target) return listItem(item.text, className);
+    const li = document.createElement('li');
+    li.className = className;
+    const jump = document.createElement('button');
+    jump.type = 'button';
+    jump.className = 'check-jump';
+    jump.textContent = item.text;
+    jump.addEventListener('click', () => {
+      item.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      item.target.focus({ preventScroll: true });
+    });
+    li.append(jump);
+    return li;
   }
 
   function listItem(text, className) {
@@ -884,7 +1016,7 @@
         'If asked to fork the repository, click Fork.',
         'Click Propose new file.',
         'Click Create pull request, then Create pull request again.'
-      ], alreadyThere);
+      ], alreadyThere, true);
       return;
     }
     // Too long to fit in a web address: copy it instead and open an empty page to paste into.
@@ -898,7 +1030,7 @@
         : 'Come back here, open “See the recipe file”, click Copy file, and paste it into the big empty box.',
       'Click Propose new file.',
       'Click Create pull request, then Create pull request again.'
-    ], alreadyThere);
+    ], alreadyThere, true);
   }
 
   /**
@@ -918,7 +1050,7 @@
         : `Come back here, open “See the recipe file” and click Copy file. Then click in the file on GitHub, select everything and paste (${keys}).`,
       'Click Commit changes, then Propose changes.',
       'Click Create pull request, then Create pull request again.'
-    ]);
+    ], '', true);
   }
 
   function download() {
@@ -937,7 +1069,7 @@
   }
 
   /** A short heading and a numbered list of what to do next. */
-  function showNextSteps(heading, steps, note) {
+  function showNextSteps(heading, steps, note, trackLink) {
     const box = $('send-results');
     box.replaceChildren();
     const p = document.createElement('p');
@@ -952,6 +1084,17 @@
     }
     box.append(p);
     if (steps.length) box.append(list);
+    if (trackLink) {
+      const track = document.createElement('p');
+      track.className = 'hint';
+      const link = document.createElement('a');
+      link.href = PULL_REQUESTS_URL;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.textContent = 'your pull requests';
+      track.append('Check whether it’s been merged in ', link, '.');
+      box.append(track);
+    }
     if (note) {
       const extra = document.createElement('p');
       extra.className = 'hint';
@@ -970,7 +1113,7 @@
     const form = readForm();
     form.introText = $('intro-text').value;
     form.ingredientsText = $('ingredients').value;
-    form.allSteps = Array.from($('steps').children).map((item) => ({
+    form.allSteps = stepItems().map((item) => ({
       text: item.querySelector('.step-text').value, at: item.querySelector('.step-time').value
     }));
     form.transcript = $('transcript-paste').value;
@@ -978,9 +1121,9 @@
     if (current.w) form.basedOn = siteHash;
     const saved = storageSet(DRAFT_PREFIX + current.v, JSON.stringify(form));
     storageSet(HANDLE_KEY, form.handle);
-    $('draft-status').textContent = saved
-      ? `Draft saved in this browser at ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`
-      : 'Drafts can’t be saved in this browser, so finish this one before closing the page.';
+    setDraftStatus(saved
+      ? `Draft saved ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+      : 'Drafts can’t be saved in this browser, so finish before closing the page');
     // Once the writer starts changing the version on the site, an older draft is replaced.
     if (current.w && $('edit-status-button').onclick === useOldDraft) showEditStatus('Editing the version on the site.');
   }
@@ -1025,13 +1168,14 @@
     const videoId = current.v;
     current = null;   // so chooseRecipe doesn't save the old draft back
     chooseRecipe(videoId);
-    $('draft-status').textContent = 'Started over.';
+    setDraftStatus('Started over');
   }
 
   let saveTimer = 0;
   function changed() {
     dirty = true;
     updatePreview();
+    markUsedLines();
     window.clearTimeout(saveTimer);
     saveTimer = window.setTimeout(saveDraft, 600);
   }
@@ -1132,7 +1276,41 @@
     window.addEventListener('beforeunload', () => { if (current) saveDraft(); });
   }
 
+  // ---- Docking the player on one-column screens --------------------------
+  /**
+   * On phones and tablets the form is below the video, so once the player scrolls
+   * off the top it docks there as a small bar. The slot keeps the player's height
+   * so the page doesn't jump. The player is moved with CSS only: moving the iframe
+   * in the page would reload the video.
+   */
+  function watchDock() {
+    const slot = $('player-slot');
+    const dock = $('player-dock');
+    if (!('IntersectionObserver' in window)) return;
+    let offTop = false;
+    const update = () => {
+      const docked = offTop && ONE_COLUMN.matches && Boolean(current);
+      if (docked === dock.classList.contains('is-docked')) return;
+      slot.style.height = docked ? slot.offsetHeight + 'px' : '';
+      dock.classList.toggle('is-docked', docked);
+    };
+    new IntersectionObserver(([entry]) => {
+      // Only dock once the player has gone off the top, not while it's still below.
+      offTop = !entry.isIntersecting && entry.boundingClientRect.top < 0;
+      update();
+    }, { threshold: 0 }).observe(slot);
+    ONE_COLUMN.addEventListener('change', update);
+  }
+
+  // The header stays at the top on wide screens; the sticky left column sits just below it.
+  const header = document.querySelector('.desk-site-header');
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(() => document.documentElement.style.setProperty('--desk-head', header.offsetHeight + 'px')).observe(header);
+  }
+
+  if (IS_MAC) for (const key of document.querySelectorAll('.alt-key')) key.textContent = 'Option';
   buildFilingBoxes();
   wire();
+  watchDock();
   fillPicker();
 })();

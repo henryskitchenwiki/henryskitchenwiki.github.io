@@ -3,14 +3,26 @@
    comes from /assets/css/site.css so the Desk always matches the site. */
 
 /* ---- Header ---------------------------------------------------------- */
-.desk-header { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; padding-top: 14px; padding-bottom: 14px; }
+.desk-header { display: flex; align-items: center; gap: 8px 24px; flex-wrap: wrap; padding-top: 14px; padding-bottom: 14px; }
+/* Whether the draft is saved, always at the top on wide screens. */
+.save-status { margin: 0 0 0 auto; color: var(--pencil); font-size: 16px; }
+.save-status:empty { display: none; }
+@media (min-width: 981px) {
+  .desk-site-header { position: sticky; top: 0; z-index: 40; }
+}
+@media (max-width: 600px) {
+  .save-status { margin-left: 0; flex-basis: 100%; }
+}
 .desk-title { margin: 0; font-family: var(--font-heading); font-size: 30px; text-transform: uppercase; letter-spacing: .02em; }
 
 /* ---- Two-column layout: episode on the left, recipe on the right ----- */
 .desk { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; padding-top: 24px; padding-bottom: 64px; }
 .desk-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 /* Keep the video in view while filling in the form on wide screens. */
-.desk > .desk-col:first-child { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; padding-right: 4px; }
+.desk > .desk-col:first-child { position: sticky; top: calc(var(--desk-head, 80px) + 12px); max-height: calc(100vh - var(--desk-head, 80px) - 24px); overflow-y: auto; padding-right: 4px; }
+
+/* Until a recipe is picked there's nothing to watch or fill in. */
+.is-locked { opacity: .5; }
 @media (max-width: 980px) {
   .desk { grid-template-columns: minmax(0, 1fr); }
   .desk > .desk-col:first-child { position: static; max-height: none; overflow: visible; }
@@ -61,6 +73,10 @@ kbd { font: 14px/1 var(--font-body); border: 1px solid var(--pencil); border-bot
 .segments input { flex: 0 0 auto; width: 18px; height: 18px; }
 .segments .seg-time { flex: 0 0 auto; border: 0; background: none; color: var(--teal); font: 700 15px var(--font-body); font-variant-numeric: tabular-nums; cursor: pointer; padding: 0; text-decoration: underline; }
 .segments .seg-text { flex: 1 1 auto; }
+/* Lines already in the recipe: greyed, with where they went. */
+.segments li.is-used .seg-text { color: var(--pencil); }
+.segments .seg-used { flex: 0 0 auto; font-size: 14px; font-weight: 700; color: var(--pencil); background: var(--recipe-card); border-radius: 4px; padding: 0 6px; }
+.segments .seg-used:empty { display: none; }
 
 /* ---- Steps and songs ------------------------------------------------- */
 .step-list, .song-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 12px; }
@@ -68,6 +84,18 @@ kbd { font: 14px/1 var(--font-body); border: 1px solid var(--pencil); border-bot
 .step-item .step-number { flex: 0 0 auto; margin-top: 4px; }
 .step-fields { flex: 1 1 auto; min-width: 0; }
 .step-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 6px; }
+.step-removed { display: flex; align-items: center; gap: 4px; padding: 6px 12px; background: var(--recipe-card); border-radius: 6px; color: var(--pencil); font-size: 16px; }
+.step-remove .remove-x { display: none; }
+/* Phones: keep a step's time, arrows and remove on one row. */
+@media (max-width: 480px) {
+  .step-item { gap: 8px; }
+  .step-item .step-number { width: 26px; height: 26px; min-width: 26px; font-size: 15px; }
+  .step-tools { flex-wrap: nowrap; }
+  .step-tools .time-field .time { width: 5.2em; }
+  .step-tools .btn-link { min-width: 40px; padding: 0; }
+  .step-remove .remove-word { display: none; }
+  .step-remove .remove-x { display: inline; font-size: 18px; }
+}
 .song-item { border: 1px dashed var(--photo-corner); border-radius: 6px; padding: 4px 14px 10px; }
 .song-item .field-label { margin-top: 8px; }
 .song-item .field { margin-top: 4px; font-weight: 400; }
@@ -106,6 +134,8 @@ kbd { font: 14px/1 var(--font-body); border: 1px solid var(--pencil); border-bot
 
 /* Check results: the heading says whether they are fixes or notes. */
 .check-list li.check-problem, .check-list li.check-warning { font-weight: 400; }
+/* A check line that goes to the box to fix. */
+.check-jump { background: none; border: 0; padding: 2px 0; font: inherit; color: inherit; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 
 /* Phones and tablets: comfortable tap sizes for the small controls. */
 .check input { width: 22px; height: 22px; flex: 0 0 auto; }
@@ -116,4 +146,22 @@ kbd { font: 14px/1 var(--font-body); border: 1px solid var(--pencil); border-bot
 .filing-group legend { font-weight: 700; font-size: 16px; padding: 0; margin-bottom: 6px; }
 .filing-boxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 2px 12px; }
 .filing-box { display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 16px; cursor: pointer; }
+@media (max-width: 480px) {
+  .filing-boxes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filing-box { font-size: 15px; line-height: 1.25; }
+}
 .filing-box input { width: 20px; height: 20px; flex: 0 0 auto; accent-color: var(--ribbon); }
+
+/* ---- The player docked to the top on one-column screens ---------------- */
+.dock-status { display: none; }
+.player-dock.is-docked {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; background: var(--plate); border-bottom: 1px solid var(--flour); box-shadow: var(--shadow-soft);
+}
+.player-dock.is-docked .video-box { flex: 0 0 auto; width: min(220px, 40vw); }
+.player-dock.is-docked .player-controls { flex: 1 1 auto; margin-top: 0; gap: 6px; min-width: 0; }
+.player-dock.is-docked [data-action="speed"] { display: none; }
+.player-dock.is-docked .clock { margin-left: 0; }
+.player-dock.is-docked .dock-status { display: block; flex-basis: 100%; color: var(--pencil); font-size: 14px; }
+.player-dock.is-docked .dock-status:empty { display: none; }

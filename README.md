@@ -93,6 +93,10 @@ categories in `content/categories.json`; Check fails on anything else and sugges
 one. An `id` there is used in recipe files and page addresses, so don't change it once used;
 the `name` is what readers see.
 
+Each category with recipes gets a page (`/recipes/ingredient/beef/`, `/recipes/collection/dinner-for-one/`,
+`/recipes/holiday/thanksgiving/`), and `/recipes/` lists them all. Written-up recipes come first on
+category pages. Episode ids can't be `ingredient`, `collection` or `holiday`.
+
 Writers file a recipe in the Desk's "Where it’s filed" section, which starts from the episode's
 entry in `content/filing.json`. Once a recipe file has its own filing, that takes over.
 

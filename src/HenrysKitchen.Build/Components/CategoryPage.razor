@@ -1,0 +1,24 @@
+@*
+    One category: /recipes/ingredient/beef/, /recipes/holiday/thanksgiving/ and so on.
+    Written-up recipes come first. See CategoryPages.cs.
+*@
+<SiteLayout Title="@($"{Model.Category.Name} Recipes")" Description="@Description" ImageUrl="@ShareImage" NoIndex="@Model.NoIndex" CurrentSection="recipes">
+<main class="wrap stack" style="padding-top: 32px; padding-bottom: 48px; gap: 20px">
+  <nav class="kicker" aria-label="Breadcrumb">
+    <a href="@CategoryPages.HubUrl">Recipes</a> › <a href="@CategoryPages.HubSectionUrl(Model.Category.Kind)">@RecipePageModel.SectionName(Model.Category.Kind)</a>
+  </nav>
+  <h1 class="ribbon">@Model.Category.Name</h1>
+  <p class="meta">@Model.Cards.Count @(Model.Cards.Count == 1 ? "recipe" : "recipes")</p>
+  <RecipeCardList Cards="@Model.Cards" />
+</main>
+</SiteLayout>
+
+@code {
+    [Parameter, EditorRequired] public CategoryPageModel Model { get; set; } = default!;
+
+    private string Description => $"{Model.Category.Name} recipes from Henry’s Kitchen.";
+
+    private string ShareImage => Model.Cards.Count > 0
+        ? $"https://i.ytimg.com/vi/{Model.Cards[0].YoutubeId}/hqdefault.jpg"
+        : BuildOptions.SiteUrl + "/assets/img/shingle-thumb.jpg";
+}

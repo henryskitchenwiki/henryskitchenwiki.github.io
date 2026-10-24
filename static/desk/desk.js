@@ -854,7 +854,11 @@
       if (button.classList.contains('stamp')) stampInto(button.parentElement.querySelector('.time'));
       if (button.dataset.step) onStepTool(button);
       if (button.dataset.song === 'remove') { button.closest('.song-item').remove(); changed(); }
-      if (button.dataset.tidy) {
+      if (button.dataset.tidy === 'steps') {
+        // Tidies every step box at once.
+        for (const box of $('steps').querySelectorAll('.step-text')) box.value = tidy(box.value);
+        changed();
+      } else if (button.dataset.tidy) {
         const box = $(button.dataset.tidy);
         box.value = button.dataset.tidy === 'ingredients' ? tidyLines(box.value) : tidy(box.value);
         changed();

@@ -161,6 +161,12 @@
     </div>
   </section>
 
+  @if (Recipe is not null)
+  {
+    @* Opens this recipe in the Transcription Desk, where an edit goes in as a pull request for review. *@
+    <p class="suggest-fix no-print">Spotted a mistake? <a class="text-link" href="/desk/?v=@(Uri.EscapeDataString(Model.Video.YoutubeId))" rel="nofollow">Suggest a fix</a></p>
+  }
+
   @if (Recipe is { Songs.Count: > 0 })
   {
     <section class="stack no-print" aria-labelledby="songs-heading">

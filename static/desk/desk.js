@@ -191,7 +191,7 @@
     if (current.w) {
       $('recipe-facts').textContent += ' · This one is already on the site. To suggest changes, mention it in the writers’ channel on Discord first.';
     }
-    $('title').value = current.t.replace(/^how to make\s+/i, '');
+    $('title').value = current.t.replace(/^how to make\s+(?:(?:a|an|the)\s+)?/i, '');
     loadVideo(current.v);
     $('get-transcript').href = 'https://www.youtube.com/watch?v=' + encodeURIComponent(current.v);
     restoreDraft();

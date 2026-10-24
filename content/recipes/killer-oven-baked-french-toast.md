@@ -10,9 +10,9 @@ episode: 1
 aired: 2011-08-05
 series: henrys-kitchen
 
-# ── Where it’s filed ── (the reviewers fill these in)
-collections: []
-main_ingredients: []
+# ── Where it’s filed ──
+collections: ["breakfast-brunch", "around-the-world"]
+main_ingredients: ["eggs", "bread"]
 holidays: []
 
 # ── Henry’s introduction ──

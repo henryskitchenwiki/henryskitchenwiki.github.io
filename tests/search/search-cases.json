@@ -1,0 +1,25 @@
+{
+  "about": "Searches the site should handle. Each case gives what's typed and the recipe page id(s) expected. 'top' must be the first result; 'includes' must appear among the results matching every word. Add a case whenever a search turns up the wrong thing.",
+  "cases": [
+    { "query": "french toast", "top": "killer-oven-baked-french-toast", "includes": ["green-chili-verde-frenchtoast"] },
+    { "query": "frenchtoast", "includes": ["killer-oven-baked-french-toast", "green-chili-verde-frenchtoast"] },
+    { "query": "french bread", "top": "killer-oven-baked-french-toast" },
+    { "query": "French Toast!", "top": "killer-oven-baked-french-toast" },
+    { "query": "shit on a shingle", "top": "shit-on-a-shingle" },
+    { "query": "shi*t", "top": "shit-on-a-shingle" },
+    { "query": "chipped beef", "top": "shit-on-a-shingle" },
+    { "query": "sos", "top": "shit-on-a-shingle" },
+    { "query": "beef", "includes": ["shit-on-a-shingle"] },
+    { "query": "worcestershire", "includes": ["shit-on-a-shingle"] },
+    { "query": "ravioli", "includes": ["authentic-st-louis-toasted-raviolis"] },
+    { "query": "raviolis", "includes": ["authentic-st-louis-toasted-raviolis"] },
+    { "query": "pie", "includes": ["bonus-thanksgiving-episode-pumpkin-pie-from-scratch"] },
+    { "query": "toasted", "includes": ["authentic-st-louis-toasted-raviolis"] },
+    { "query": "potato", "includes": ["twice-baked-french-onion-potatoes"] },
+    { "query": "big mac", "top": "big-mac" },
+    { "query": "mcbreakfast", "includes": ["turkey-mcbreakfast-sandwich"] },
+    { "query": "70", "includes": ["shit-on-a-shingle"] },
+    { "query": "ep 70", "includes": ["shit-on-a-shingle"] },
+    { "query": "episode 47", "top": "big-mac" }
+  ]
+}

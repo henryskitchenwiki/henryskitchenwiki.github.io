@@ -35,6 +35,13 @@ jobs:
       - name: Build the site
         run: dotnet run --project src/HenrysKitchen.Build --configuration Release
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test the search
+        run: node tests/search/run-search-tests.js _site
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

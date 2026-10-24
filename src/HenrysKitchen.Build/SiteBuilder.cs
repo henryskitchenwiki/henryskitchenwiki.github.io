@@ -11,7 +11,7 @@ namespace HenrysKitchen.Build;
 ///   1. read data/videos.json and content/recipes/*.md
 ///   2. check them, and stop if anything has to be fixed
 ///   3. copy static/ (hand-written pages, styles, scripts, images, the Desk)
-///   4. write a page for every episode, plus the Desk's recipe list
+///   4. write a page for every episode, the Desk's recipe list and the search index
 /// </summary>
 internal static class SiteBuilder
 {
@@ -71,6 +71,7 @@ internal static class SiteBuilder
         }
 
         await WriteFileAsync(options.OutputFolder, "assets/js/recipes-data.js", DeskData(videos, recipes));
+        await WriteFileAsync(options.OutputFolder, "assets/js/search-index.js", SearchIndex.Write(videos, recipes));
 
         Console.WriteLine($"Done: {videos.Count} recipe pages written to {Path.GetRelativePath(root, options.OutputFolder)}/");
         return 0;

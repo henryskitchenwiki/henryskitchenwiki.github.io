@@ -47,17 +47,22 @@
   $('results-count').textContent = matches.length
     ? matches.length + (matches.length === 1 ? ' recipe' : ' recipes')
     : (closeMatches.length ? 'No exact matches' : 'No recipes found');
-  fill($('results'), matches);
+  if (query) {
+    fill($('results'), matches);
+  } else {
+    fillAtoZ(matches);
+  }
   fill($('close-results'), closeMatches.slice(0, 12));
   $('close-section').hidden = closeMatches.length === 0;
   $('no-results').hidden = matches.length + closeMatches.length > 0;
 
-  /** A–Z order ignores "How to Make", "Henry's" and "a/an/the" at the start of a title. */
+  /** A–Z order ignores "How to Make", "Henry's", "a/an/the" and quote marks at the start of a title. */
   function sortKey(title) {
     return title
       .replace(/^how to( make)?\s+/i, '')
       .replace(/^henry['\u2019]s\s+/i, '')
-      .replace(/^(a|an|the)\s+/i, '');
+      .replace(/^(a|an|the)\s+/i, '')
+      .replace(/^[^A-Za-z0-9]+/, '');
   }
 
   /** "Episode 47", or the date for episodes without a number: "Mar 17, 2026". */
@@ -65,6 +70,42 @@
     if (r.e) return 'Episode ' + r.e;
     const [y, m, d] = r.d.split('-').map(Number);
     return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  /**
+   * All Recipes A–Z: a section per letter, and a bar of letters to jump to.
+   * Titles starting with a number go under "#".
+   */
+  function fillAtoZ(items) {
+    const groups = new Map();
+    for (const r of items) {
+      const first = sortKey(r.title).charAt(0).toUpperCase();
+      const letter = /[A-Z]/.test(first) ? first : '#';
+      if (!groups.has(letter)) groups.set(letter, []);
+      groups.get(letter).push(r);
+    }
+
+    const bar = $('letters');
+    for (const letter of ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ']) {
+      const has = groups.has(letter);
+      const item = document.createElement(has ? 'a' : 'span');
+      item.textContent = letter;
+      if (has) item.href = '#letter-' + (letter === '#' ? 'num' : letter);
+      else item.setAttribute('aria-hidden', 'true');
+      bar.appendChild(item);
+    }
+    bar.hidden = false;
+
+    for (const [letter, recipesForLetter] of [...groups].sort((a, b) => a[0].localeCompare(b[0]))) {
+      const heading = document.createElement('h2');
+      heading.className = 'letter-heading';
+      heading.id = 'letter-' + (letter === '#' ? 'num' : letter);
+      heading.textContent = letter;
+      const list = document.createElement('ul');
+      list.className = 'results';
+      fill(list, recipesForLetter);
+      $('az').append(heading, list);
+    }
   }
 
   function fill(list, items) {
@@ -94,7 +135,10 @@
     link.href = linkFor(r);
     link.textContent = r.title;
 
-    item.append(thumb, kicker, link);
+    const text = document.createElement('div');
+    text.className = 'card-text';
+    text.append(kicker, link);
+    item.append(thumb, text);
     return item;
   }
 })();

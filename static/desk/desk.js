@@ -522,7 +522,7 @@
     const warnings = [];
     if (!current) problems.push('Pick a recipe at the top of the page first.');
     if (!form.title) problems.push('The recipe needs a title.');
-    if (!form.handle) problems.push('Add your name in the community (in “4. The recipe”) so we know who to thank.');
+    if (!form.handle) problems.push('Add your name in step 4.');
     if (!form.introParagraphs.length) problems.push('Add Henry’s introduction.');
     if (!form.ingredients.length) problems.push('Add at least one ingredient.');
     if (!form.steps.some((s) => s.text)) problems.push('Add at least one step.');
@@ -549,9 +549,9 @@
     if (!form.introEnd) warnings.push('No end time for the introduction yet.');
 
     const untimed = form.steps.filter((s) => s.text && !s.at).length;
-    if (untimed) warnings.push(`${untimed} step${untimed === 1 ? ' has' : 's have'} no time, so ${untimed === 1 ? 'it won’t get' : 'they won’t get'} a “Watch this step” button. That’s fine if you’re not sure.`);
+    if (untimed) warnings.push(`${untimed} step${untimed === 1 ? ' has' : 's have'} no time.`);
     const times = form.steps.map((s) => parseTime(s.at)).filter((t) => t !== null && !Number.isNaN(t));
-    if (times.some((t, i) => i > 0 && t < times[i - 1])) warnings.push('Some step times go backwards. Double-check the order of the steps.');
+    if (times.some((t, i) => i > 0 && t < times[i - 1])) warnings.push('Some step times are out of order.');
     for (const song of form.songs) {
       if (song.link && !/^https:\/\/music\.youtube\.com\//.test(song.link)) problems.push(`The link for “${song.title}” should start with https://music.youtube.com/`);
     }
@@ -572,10 +572,10 @@
     const heading = document.createElement('p');
     if (!result.problems.length) {
       heading.className = 'check-ok';
-      heading.textContent = result.warnings.length ? 'Looks good! A couple of things you might want to know:' : 'Looks good! Your recipe is ready to send.';
+      heading.textContent = result.warnings.length ? 'Ready to send. A few notes:' : 'Ready to send.';
     } else {
       heading.className = 'check-problem';
-      heading.textContent = 'Almost there. Just a few things to fix first:';
+      heading.textContent = 'Fix these first:';
     }
     box.append(heading);
     const list = document.createElement('ul');
@@ -587,10 +587,8 @@
 
   function listItem(text, className) {
     const li = document.createElement('li');
-    const tag = document.createElement('span');
-    tag.className = className;
-    tag.textContent = className === 'check-problem' ? 'To fix: ' : 'Good to know: ';
-    li.append(tag, document.createTextNode(text));
+    li.className = className;
+    li.textContent = text;
     return li;
   }
 
@@ -705,25 +703,23 @@
 
     if (fullUrl.length <= MAX_URL_LENGTH) {
       window.open(fullUrl, '_blank', 'noopener');
-      showNextSteps('GitHub is open in a new tab with your recipe filled in. Over there:', [
-        'If GitHub asks you to sign in, sign in. If your recipe isn’t filled in afterwards, come back here and click Send to the Kitchen again.',
-        'If GitHub offers to “Fork this repository”, click it. That just makes your own copy to send the recipe from.',
-        'Scroll down and click the green Propose new file button.',
-        'On the next page, click the green Create pull request button (it may appear twice; click it both times).',
-        'That’s it! Royal Flush will read it and let you know if anything needs a tweak.'
+      showNextSteps('In the GitHub tab:', [
+        'Sign in if asked.',
+        'If asked to fork the repository, click Fork.',
+        'Click Propose new file.',
+        'Click Create pull request, then Create pull request again.'
       ]);
       return;
     }
     // Too long to fit in a web address: copy it instead and open an empty page to paste into.
     const copied = await copyText(file);
     window.open(`${REPO_NEW_FILE_URL}?filename=${encodeURIComponent(filename)}`, '_blank', 'noopener');
-    showNextSteps('Your recipe is too long to send in one go, so there’s one extra step. In the GitHub tab:', [
+    showNextSteps('This recipe is too long to send in one go. In the GitHub tab:', [
       copied
-        ? 'Click in the big empty box and paste (Ctrl+V, or Cmd+V on a Mac). Your recipe has already been copied for you.'
-        : 'Come back here, open “Peek at the recipe file”, click Copy file, then paste it into the big empty box on GitHub.',
-      'Scroll down and click the green Propose new file button.',
-      'On the next page, click the green Create pull request button.',
-      'That’s it! Royal Flush will read it and let you know if anything needs a tweak.'
+        ? 'Paste the recipe into the big empty box (it’s already copied).'
+        : 'Come back here, open “See the recipe file”, click Copy file, and paste it into the big empty box.',
+      'Click Propose new file.',
+      'Click Create pull request, then Create pull request again.'
     ]);
   }
 
@@ -739,11 +735,7 @@
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-    showNextSteps('Your recipe is saved as ' + current.s + '.md. Next:', [
-      'Find the file in your Downloads folder.',
-      'Post it in the writers’ channel on Discord (drag the file into the message box), or send it to Royal Flush directly.',
-      'That’s it! He’ll add it to the site and let you know if anything needs a tweak.'
-    ]);
+    showNextSteps('Saved as ' + current.s + '.md. Post it in the writers’ channel on Discord.', []);
   }
 
   /** A short heading and a numbered list of what to do next. */
@@ -760,7 +752,8 @@
       li.textContent = text;
       list.append(li);
     }
-    box.append(p, list);
+    box.append(p);
+    if (steps.length) box.append(list);
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
@@ -847,7 +840,7 @@
       awayForTranscript = false;
       if (!$('transcript-paste').value.trim()) {
         $('transcript-paste').focus();
-        $('transcript-status').textContent = 'Welcome back! Paste the transcript into the box (Ctrl+V, or Cmd+V on a Mac).';
+        $('transcript-status').textContent = 'Paste the transcript here.';
       }
     });
 

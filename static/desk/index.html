@@ -166,11 +166,10 @@
 
     <section class="panel finish" aria-labelledby="finish-heading">
       <h2 id="finish-heading">10. Send it to the kitchen</h2>
-      <p class="hint">When you’re happy with your recipe, send it in. Nothing goes on the site straight away: Royal Flush reads every recipe first, so you can’t break anything.</p>
+      <p class="hint">Royal Flush reads every recipe before it goes on the site.</p>
 
       <div class="send-step">
-        <h3>First, check your recipe</h3>
-        <p class="hint">The Desk looks for anything missing or mistyped, like a time that isn’t in minutes and seconds.</p>
+        <h3>Check your recipe</h3>
         <button type="button" class="btn btn-outline" id="check">Check my recipe</button>
         <div id="check-results" aria-live="polite"></div>
       </div>
@@ -178,24 +177,22 @@
       <div class="send-choices">
         <div class="send-choice">
           <h3>Have a GitHub account?</h3>
-          <p>GitHub is the free website where the recipe site lives. This button opens it in a new tab with your recipe already filled in.</p>
-          <p>Then click two green buttons: <strong>Propose new file</strong>, then <strong>Create pull request</strong>. (A “pull request” is just GitHub’s name for “please add this.”)</p>
+          <p>Opens GitHub with your recipe filled in.</p>
           <button type="button" class="btn btn-primary" id="send">Send to the Kitchen</button>
-          <p class="hint">Want an account? <a href="https://github.com/signup" target="_blank" rel="noopener">Sign up for free</a>. It takes a couple of minutes.</p>
+          <p class="hint">Need one? <a href="https://github.com/signup" target="_blank" rel="noopener">Sign up for free</a>.</p>
         </div>
         <div class="send-choice">
-          <h3>No GitHub account? No problem.</h3>
-          <p>Save your recipe as a file and post it in the writers’ channel on Discord. Royal Flush will add it to the site for you.</p>
+          <h3>No GitHub account?</h3>
+          <p>Save the recipe file and post it in the writers’ channel on Discord.</p>
           <button type="button" class="btn btn-outline" id="download-file">Save recipe file</button>
-          <p class="hint">The file lands in your Downloads folder, named after the recipe.</p>
         </div>
       </div>
       <div id="send-results" aria-live="polite"></div>
 
       <details>
-        <summary>Peek at the recipe file <span class="optional">(optional)</span></summary>
+        <summary>See the recipe file</summary>
         <pre id="file-preview" class="file-preview"></pre>
-        <p class="hint">This is what the site reads. You don’t need to edit it; change the boxes above instead.</p>
+        <p class="hint">Make changes in the boxes above, not here.</p>
         <div class="row">
           <button type="button" class="btn btn-outline btn-small" id="copy-file">Copy file</button>
         </div>

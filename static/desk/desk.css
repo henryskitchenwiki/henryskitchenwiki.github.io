@@ -102,3 +102,6 @@ kbd { font: 14px/1 var(--font-body); border: 1px solid var(--pencil); border-bot
 
 /* Anything marked hidden stays hidden, even if a layout class sets display. */
 [hidden] { display: none !important; }
+
+/* Check results: the heading says whether they are fixes or notes. */
+.check-list li.check-problem, .check-list li.check-warning { font-weight: 400; }

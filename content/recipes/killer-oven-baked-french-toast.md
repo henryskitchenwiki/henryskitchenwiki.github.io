@@ -24,7 +24,7 @@ intro:
     Hello and welcome to Henry’s Kitchen where today we’re going to be making delicious ovenbaked French toast.
 
 # ── Recipe card ──
-servings: "4 - 6"
+servings: "2 - 4"
 stats: []
 ingredients_at: ""
 ingredients:

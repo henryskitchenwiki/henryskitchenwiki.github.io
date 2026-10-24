@@ -45,9 +45,19 @@
     </div>
   </div>
 
+  @* The photo is the player: pressing it plays the episode in its place. Once playing,
+     the video floats in the corner when you scroll away from it (site.js). *@
   <div class="mint-mat no-print">
     <figure class="photo-frame tilt" style="margin: 0">
-      <img src="@Model.ImageUrl" alt="@Model.ImageAlt" width="480" height="270">
+      <div class="hero-slot">
+        <div class="hero-media" data-float>
+          <button class="player hero-player" id="episode-player" type="button" data-video="@Video.YoutubeId" data-title="@($"Henry’s Kitchen: {Model.Title}")" data-play="episode-player" data-start="0" aria-label="@($"Play {Model.Title} ({Video.Length})")">
+            <img src="@Model.ImageUrl" alt="@Model.ImageAlt" width="480" height="270">
+            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M10 8l6 4-6 4z"></path></svg>
+            <span>@Video.Length · Plays from YouTube</span>
+          </button>
+        </div>
+      </div>
       <span class="corner tl" aria-hidden="true"></span><span class="corner tr" aria-hidden="true"></span><span class="corner bl" aria-hidden="true"></span><span class="corner br" aria-hidden="true"></span>
     </figure>
   </div>
@@ -66,8 +76,11 @@
         }
       }
     </blockquote>
-    <button class="btn btn-outline btn-small no-print" style="align-self: flex-start" type="button" data-play="episode-player" data-start="@IntroStart.TotalSeconds">
-      <PlayIcon />Watch Henry’s introduction · @IntroStart</button>
+    @if (Recipe is not null)
+    {
+      <button class="btn btn-outline btn-small no-print" style="align-self: flex-start" type="button" data-play="episode-player" data-start="@IntroStart.TotalSeconds">
+        <PlayIcon />Watch Henry’s introduction · @IntroStart</button>
+    }
   </section>
 
   <section id="recipe" class="recipe-card" aria-labelledby="card-title">
@@ -112,18 +125,8 @@
         </ul>
         @if (Recipe?.IngredientsAt is { } ingredientsAt)
         {
-          <button class="btn btn-outline btn-small no-print" style="align-self: flex-start" type="button" data-play="episode-player" data-start="@ingredientsAt.TotalSeconds">
-            <PlayIcon />Watch Henry list them · @ingredientsAt</button>
+          <p class="no-print" style="margin: 0"><button class="time-link" type="button" data-play="episode-player" data-start="@ingredientsAt.TotalSeconds"><PlayIcon />Watch Henry list them · @ingredientsAt</button></p>
         }
-      </section>
-
-      <section class="stack no-print" style="gap: 8px" aria-labelledby="video-heading">
-        <h3 id="video-heading">Watch the Episode</h3>
-        <button class="player" id="episode-player" type="button" data-video="@Video.YoutubeId" data-title="Henry’s Kitchen: @Model.Title" data-play="episode-player" data-start="0" aria-label="Play @Model.Title">
-          <img src="https://i.ytimg.com/vi/@(Video.YoutubeId)/hqdefault.jpg" alt="" width="480" height="270">
-          <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M10 8l6 4-6 4z"></path></svg>
-          <span>@Video.Length · Plays from YouTube</span>
-        </button>
       </section>
 
       <section class="stack" style="gap: 8px" aria-labelledby="steps-heading">
@@ -137,10 +140,10 @@
           {
             @foreach (var (step, index) in Recipe.Steps.Select((s, i) => (s, i)))
             {
-              <li><span class="step-number">@(index + 1)</span><div class="step-body"><span><ContentText Value="@step.Text" /></span>
+              <li><span class="step-number">@(index + 1)</span><div class="step-body"><ContentText Value="@step.Text" />
                 @if (step.At is { } at)
                 {
-                  <button class="btn btn-outline btn-small" type="button" data-play="episode-player" data-start="@at.TotalSeconds"><PlayIcon />Watch this step · @at</button>
+                  <text> </text><button class="time-link" type="button" data-play="episode-player" data-start="@at.TotalSeconds" aria-label="@($"Watch step {index + 1} from {at}")"><PlayIcon />@at</button>
                 }
               </div></li>
             }

@@ -332,7 +332,7 @@
     const editing = Boolean(current && current.w);
     $('send').textContent = editing ? 'Send my changes' : 'Send to the Kitchen';
     $('send-about').textContent = editing
-      ? 'Opens the recipe on GitHub, with your version copied to paste in.'
+      ? 'Copies your version and shows you how to paste it in on GitHub.'
       : 'Opens GitHub with your recipe filled in.';
     $('clear-draft').textContent = editing ? 'Undo my changes' : 'Start this recipe over';
   }
@@ -1019,38 +1019,57 @@
       ], alreadyThere, true);
       return;
     }
-    // Too long to fit in a web address: copy it instead and open an empty page to paste into.
-    // The copy starts before the new tab opens, while this page still has focus.
-    const copying = copyText(file);
-    window.open(`${REPO_NEW_FILE_URL}?filename=${encodeURIComponent(filename)}`, '_blank', 'noopener');
-    const copied = await copying;
-    showNextSteps('This recipe is too long to send in one go. In the GitHub tab:', [
-      copied
-        ? 'Paste the recipe into the big empty box (it’s already copied).'
-        : 'Come back here, open “See the recipe file”, click Copy file, and paste it into the big empty box.',
+    // Too long to fit in a web address: copy it instead, and let the writer read the
+    // steps before opening an empty GitHub page to paste into.
+    const copied = await copyText(file);
+    const open = document.createElement('a');
+    open.className = 'btn btn-primary';
+    open.href = `${REPO_NEW_FILE_URL}?filename=${encodeURIComponent(filename)}`;
+    open.target = '_blank';
+    open.rel = 'noopener';
+    open.textContent = 'Open GitHub';
+    showNextSteps(copied ? 'This recipe is too long to send in one go, so it’s copied instead. On GitHub:' : 'This recipe is too long to send in one go. Open “See the recipe file” and click Copy file, then on GitHub:', [
+      'Sign in if asked. If asked to fork the repository, click Fork.',
+      `Click in the big empty box and paste (${IS_MAC ? '⌘V' : 'Ctrl+V'}).`,
       'Click Propose new file.',
       'Click Create pull request, then Create pull request again.'
-    ], alreadyThere, true);
+    ], alreadyThere, true, [open]);
   }
 
   /**
-   * GitHub's edit page can't be filled in from a link, so the Desk copies the
-   * whole file and the writer pastes it over the old one.
+   * GitHub's edit page can't be filled in from a link, so the writer pastes the
+   * whole file over the old one. GitHub keeps Commit changes greyed out until the
+   * file is different, so the paste is the step that matters. The steps are shown
+   * first, and GitHub only opens when the writer clicks Open GitHub, so they've
+   * seen what to do before the Desk is hidden behind GitHub.
    */
   async function sendEdit(file, filename) {
-    const copying = copyText(file);
-    window.open(REPO_EDIT_URL + filename, '_blank', 'noopener');
-    const copied = await copying;
-    const keys = IS_MAC ? '⌘A, then ⌘V' : 'Ctrl+A, then Ctrl+V';
-    showNextSteps('In the GitHub tab:', [
-      'Sign in if asked.',
-      'If asked to fork the repository, click Fork this repository.',
-      copied
-        ? `Click in the file, then select everything and paste (${keys}). Your version is already copied.`
-        : `Come back here, open “See the recipe file” and click Copy file. Then click in the file on GitHub, select everything and paste (${keys}).`,
-      'Click Commit changes, then Propose changes.',
+    const copied = await copyText(file);
+    const select = IS_MAC ? '⌘A' : 'Ctrl+A';
+    const paste = IS_MAC ? '⌘V' : 'Ctrl+V';
+
+    const open = document.createElement('a');
+    open.className = 'btn btn-primary';
+    open.href = REPO_EDIT_URL + filename;
+    open.target = '_blank';
+    open.rel = 'noopener';
+    open.textContent = 'Open GitHub';
+
+    const copyAgain = document.createElement('button');
+    copyAgain.type = 'button';
+    copyAgain.className = 'btn btn-outline';
+    copyAgain.textContent = copied ? 'Copy again' : 'Copy my version';
+    copyAgain.addEventListener('click', async () => {
+      const ok = await copyText(buildFile(readForm()));
+      copyAgain.textContent = ok ? 'Copied' : 'Couldn’t copy. Open “See the recipe file” and select the text';
+    });
+
+    showNextSteps(copied ? 'Your version is copied. Next, on GitHub:' : 'Copy your version first, then on GitHub:', [
+      'Sign in if asked. If asked to fork the repository, click Fork this repository.',
+      `Click in the file, select everything (${select}) and paste (${paste}).`,
+      'Click Commit changes, then Propose changes. Commit changes stays grey until you’ve pasted.',
       'Click Create pull request, then Create pull request again.'
-    ], '', true);
+    ], '', true, copied ? [open, copyAgain] : [copyAgain, open]);
   }
 
   function download() {
@@ -1069,7 +1088,7 @@
   }
 
   /** A short heading and a numbered list of what to do next. */
-  function showNextSteps(heading, steps, note, trackLink) {
+  function showNextSteps(heading, steps, note, trackLink, actions) {
     const box = $('send-results');
     box.replaceChildren();
     const p = document.createElement('p');
@@ -1084,6 +1103,12 @@
     }
     box.append(p);
     if (steps.length) box.append(list);
+    if (actions && actions.length) {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.append(...actions);
+      box.append(row);
+    }
     if (trackLink) {
       const track = document.createElement('p');
       track.className = 'hint';

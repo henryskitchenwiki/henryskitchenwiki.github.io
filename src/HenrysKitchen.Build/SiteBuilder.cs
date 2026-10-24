@@ -91,7 +91,9 @@ internal static class SiteBuilder
             {
                 var video = videos[i];
                 var title = recipes.GetValueOrDefault(video.YoutubeId)?.Title ?? video.Title;
-                var kicker = video.Episode is null ? video.Aired.Year.ToString(System.Globalization.CultureInfo.InvariantCulture) : $"Episode {video.Episode}";
+                var kicker = video.Episode is null
+                    ? video.Aired.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)
+                    : $"Episode {video.Episode}";
                 return new RecipeCard(title, $"/recipes/{video.Id}/", video.YoutubeId, kicker);
             })
             .ToList();

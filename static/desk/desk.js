@@ -186,10 +186,10 @@
     history.replaceState(null, '', url);
 
     $('recipe-facts').textContent =
-      (current.e ? `Episode ${current.e} · ` : '') +
+      current.t + ' · ' + (current.e ? `Episode ${current.e} · ` : '') +
       `Aired ${current.d} · ${formatTime(current.l)} long · File name: ${current.s}.md`;
     if (current.w) {
-      $('recipe-facts').textContent += ' · This one is already on the site. To suggest changes, mention it in the writers’ channel on Discord first.';
+      $('recipe-facts').textContent += ' · Already on the site.';
     }
     $('title').value = current.t.replace(/^how to make\s+(?:(?:a|an|the)\s+)?/i, '');
     loadVideo(current.v);

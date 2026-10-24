@@ -30,7 +30,8 @@
   if (query) {
     const results = window.HKSearch.create(recipes, window.HK_SEARCH_WORDS).search(query);
     ({ matches, closeMatches } = results);
-    if (results.suggestion) {
+    // Only offer a different spelling when nothing matched every word.
+    if (results.suggestion && matches.length === 0) {
       $('did-you-mean-link').textContent = results.suggestion;
       $('did-you-mean-link').href = '/search/?q=' + encodeURIComponent(results.suggestion);
       $('did-you-mean').hidden = false;
@@ -38,18 +39,33 @@
     $('results-heading').textContent = 'Results for “' + query + '”';
     document.title = 'Results for ' + query + ' | Henry’s Kitchen';
   } else {
-    matches = recipes.slice().sort((a, b) => a.title.localeCompare(b.title));
+    matches = recipes.slice().sort((a, b) => sortKey(a.title).localeCompare(sortKey(b.title)));
     $('results-heading').textContent = 'All Recipes A–Z';
     document.title = 'All Recipes A–Z | Henry’s Kitchen';
   }
 
   $('results-count').textContent = matches.length
     ? matches.length + (matches.length === 1 ? ' recipe' : ' recipes')
-    : (closeMatches.length ? 'No exact matches' : '');
+    : (closeMatches.length ? 'No exact matches' : 'No recipes found');
   fill($('results'), matches);
   fill($('close-results'), closeMatches.slice(0, 12));
   $('close-section').hidden = closeMatches.length === 0;
   $('no-results').hidden = matches.length + closeMatches.length > 0;
+
+  /** A–Z order ignores "How to Make", "Henry's" and "a/an/the" at the start of a title. */
+  function sortKey(title) {
+    return title
+      .replace(/^how to( make)?\s+/i, '')
+      .replace(/^henry['\u2019]s\s+/i, '')
+      .replace(/^(a|an|the)\s+/i, '');
+  }
+
+  /** "Episode 47", or the date for episodes without a number: "Mar 17, 2026". */
+  function label(r) {
+    if (r.e) return 'Episode ' + r.e;
+    const [y, m, d] = r.d.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
 
   function fill(list, items) {
     for (const r of items) list.appendChild(card(r));
@@ -71,7 +87,7 @@
 
     const kicker = document.createElement('div');
     kicker.className = 'kicker';
-    kicker.textContent = r.e ? 'Episode ' + r.e : r.d.slice(0, 4);
+    kicker.textContent = label(r);
 
     const link = document.createElement('a');
     link.className = 'card-title';

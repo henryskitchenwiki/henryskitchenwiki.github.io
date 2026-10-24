@@ -42,7 +42,7 @@
       </form>
     </div>
     <nav class="main-nav" aria-label="Main">
-      <a href="/#recipe-box">Recipes</a>
+      <a href="/search/" aria-current="@(CurrentSection == "recipes" ? "page" : null)">Recipes</a>
       <a href="/#live">Live from the Kitchen</a>
       <a href="/about/">About Henry</a>
     </nav>
@@ -59,8 +59,8 @@
       <p>Henry’s Kitchen recipes are kept by The Users. This site is not operated by Henry Phillips.</p>
     </div>
     <nav class="footer-nav" aria-label="Footer">
-      <a href="/#recipe-box">Recipes</a>
-      <a href="https://www.twitch.tv/henlips1">Live from the Kitchen</a>
+      <a href="/search/">Recipes</a>
+      <a href="/#live">Live from the Kitchen</a>
       <a href="/about/">About Henry</a>
       <a href="/about/#staff">Kitchen Staff</a>
     </nav>
@@ -82,6 +82,9 @@
 
     /// <summary>True until launch: asks search engines not to list the page.</summary>
     [Parameter] public bool NoIndex { get; set; }
+
+    /// <summary>Which menu item to underline as the current page: "recipes", or null for none.</summary>
+    [Parameter] public string? CurrentSection { get; set; }
 
     [Parameter, EditorRequired] public RenderFragment? ChildContent { get; set; }
 }

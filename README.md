@@ -26,6 +26,8 @@ the site going: recipes go in through pull requests, and GitHub builds and publi
 |---|---|---|
 | `content/recipes/` | One file per written-up recipe, e.g. `big-mac.md` | Writers, through the Desk |
 | `content/_templates/` | A blank recipe file, for writing one by hand | Rarely |
+| `content/categories.json` | Every category a recipe can be filed under: main ingredients, collections, holidays | Site maintainers |
+| `content/filing.json` | Where each episode is filed until its recipe is written up (a first pass from the titles) | Anyone; correct freely |
 | `content/home.json` | Which recipe is featured at the top of the home page | Site maintainers |
 | `content/search/search-words.json` | Words that mean the same thing in a search, e.g. fry / fries | Anyone who finds a search that misses |
 | `data/videos.json` | Every Henry’s Kitchen recipe episode: title, date, length | The weekly YouTube check (coming); otherwise by hand, carefully |
@@ -83,6 +85,16 @@ Build options:
 - **Add a field to recipe files:** add it to `RecipeFile` in `RecipeLoader.cs`, to `Recipe`
   in `Models.cs`, to the template in `content/_templates/`, and to the Desk
   (`static/desk/desk.js`, `buildFile`).
+
+## Categories
+
+Recipes are filed by main ingredient (up to three), collection and holiday, using only the
+categories in `content/categories.json`; Check fails on anything else and suggests the closest
+one. An `id` there is used in recipe files and page addresses, so don't change it once used;
+the `name` is what readers see.
+
+Writers file a recipe in the Desk's "Where it’s filed" section, which starts from the episode's
+entry in `content/filing.json`. Once a recipe file has its own filing, that takes over.
 
 ## Search
 

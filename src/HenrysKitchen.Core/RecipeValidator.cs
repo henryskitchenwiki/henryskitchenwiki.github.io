@@ -20,7 +20,8 @@ public static class RecipeValidator
     /// True for the public launch: [[placeholder]] text becomes an error instead of a note,
     /// so nothing unfinished goes out by accident.
     /// </param>
-    public static Result Validate(IEnumerable<RecipeLoader.Result> loaded, VideoCatalog catalog, bool launch = false)
+    /// <param name="categories">The category list; when given, filing must use its categories.</param>
+    public static Result Validate(IEnumerable<RecipeLoader.Result> loaded, VideoCatalog catalog, bool launch = false, CategoryList? categories = null)
     {
         var problems = new List<Problem>();
         var recipes = new Dictionary<string, Recipe>(StringComparer.Ordinal);
@@ -34,7 +35,7 @@ public static class RecipeValidator
             }
 
             var before = problems.Count(p => p.Severity == Severity.Error);
-            CheckRecipe(recipe, catalog, launch, problems);
+            CheckRecipe(recipe, catalog, launch, categories, problems);
 
             if (recipes.TryGetValue(recipe.YoutubeId, out var other))
             {
@@ -52,7 +53,7 @@ public static class RecipeValidator
         return new Result(recipes, problems);
     }
 
-    private static void CheckRecipe(Recipe recipe, VideoCatalog catalog, bool launch, List<Problem> problems)
+    private static void CheckRecipe(Recipe recipe, VideoCatalog catalog, bool launch, CategoryList? categories, List<Problem> problems)
     {
         var file = recipe.SourcePath;
         void Error(string message) => problems.Add(Problem.Error(file, message));
@@ -69,6 +70,8 @@ public static class RecipeValidator
         {
             Error($"This episode's page is /recipes/{video.Id}/, so the file should be named {video.Id}.md with id: {video.Id}");
         }
+
+        categories?.Check(recipe.Filing, file, problems);
 
         // Every time has to fall inside the episode.
         var times = new List<(string Label, Timecode? Time)>

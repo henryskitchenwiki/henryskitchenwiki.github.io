@@ -15,7 +15,7 @@
       <a href="/search/">Recipes</a> ›
       @if (Model.Filed is { } filed)
       {
-        <text>@filed.Section › </text><a href="@SearchFor(filed.Name)">@filed.Name</a>
+        <text>@RecipePageModel.SectionName(filed.Kind) › </text><a href="@SearchFor(filed.Name)">@filed.Name</a>
       }
       else
       {

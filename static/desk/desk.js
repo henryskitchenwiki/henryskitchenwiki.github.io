@@ -38,6 +38,11 @@
   ];
 
   const recipes = (window.HK_RECIPES || []).slice().sort((a, b) => a.d.localeCompare(b.d));
+
+  // Categories to file under, from content/categories.json (via the site build).
+  // i = main ingredients, c = collections, h = holidays.
+  const CATEGORIES = window.HK_CATEGORIES || { ingredients: [], collections: [], holidays: [] };
+  const FILING_KINDS = { i: CATEGORIES.ingredients, c: CATEGORIES.collections, h: CATEGORIES.holidays };
   const $ = (id) => document.getElementById(id);
 
   let current = null;     // the recipe being written up
@@ -194,6 +199,7 @@
     $('title').value = current.t.replace(/^how to make\s+(?:(?:a|an|the)\s+)?/i, '');
     loadVideo(current.v);
     $('get-transcript').href = 'https://www.youtube.com/watch?v=' + encodeURIComponent(current.v);
+    setFiling(current.f);
     restoreDraft();
     if ($('steps').children.length === 0) addStep();
     updatePreview();
@@ -206,6 +212,7 @@
       $(id).classList.remove('is-bad');
     }
     $('intro-source').value = 'transcript-panel';
+    setFiling(null);
     $('steps').replaceChildren();
     $('songs').replaceChildren();
     $('check-results').replaceChildren();
@@ -446,6 +453,40 @@
     changed();
   }
 
+  // ---- 10. Where it's filed -------------------------------------------------
+  /** Builds the tick boxes from the category list, once. */
+  function buildFilingBoxes() {
+    for (const group of document.querySelectorAll('.filing-group')) {
+      const kind = group.dataset.kind;
+      const boxes = document.createElement('div');
+      boxes.className = 'filing-boxes';
+      for (const category of FILING_KINDS[kind] || []) {
+        const label = document.createElement('label');
+        label.className = 'filing-box';
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.value = category.id;
+        box.dataset.kind = kind;
+        label.append(box, document.createTextNode(' ' + category.name));
+        boxes.append(label);
+      }
+      group.append(boxes);
+    }
+  }
+
+  /** Ticks the boxes for a filing ({ i, c, h } of category ids); null unticks everything. */
+  function setFiling(filing) {
+    for (const box of document.querySelectorAll('.filing-boxes input')) {
+      box.checked = Boolean(filing && (filing[box.dataset.kind] || []).includes(box.value));
+    }
+  }
+
+  function getFiling() {
+    const filing = { i: [], c: [], h: [] };
+    for (const box of document.querySelectorAll('.filing-boxes input:checked')) filing[box.dataset.kind].push(box.value);
+    return filing;
+  }
+
   // ---- 7. Steps and 8. songs -----------------------------------------------
   function addStep(text, at) {
     const item = $('step-template').content.firstElementChild.cloneNode(true);
@@ -511,7 +552,8 @@
         link: item.querySelector('.song-link').value.trim(),
         heard: item.querySelector('.song-heard').checked
       })).filter((s) => s.title),
-      notes: $('notes').value.trim()
+      notes: $('notes').value.trim(),
+      filing: getFiling()
     };
   }
 
@@ -547,6 +589,8 @@
     const end = parseTime(form.introEnd);
     if (start !== null && end !== null && end <= start) problems.push('The introduction has to end after it starts.');
     if (!form.introEnd) warnings.push('No end time for the introduction yet.');
+    if (!form.filing.i.length) warnings.push('Not filed under a main ingredient.');
+    if (form.filing.i.length > 3) warnings.push('More than 3 main ingredients.');
 
     const untimed = form.steps.filter((s) => s.text && !s.at).length;
     if (untimed) warnings.push(`${untimed} step${untimed === 1 ? ' has' : 's have'} no time.`);
@@ -615,10 +659,10 @@
       `aired: ${current.d}`,
       'series: henrys-kitchen',
       '',
-      '# ── Where it’s filed ── (the reviewers fill these in)',
-      'collections: []',
-      'main_ingredients: []',
-      'holidays: []',
+      '# ── Where it’s filed ──',
+      `collections: [${form.filing.c.map(q).join(', ')}]`,
+      `main_ingredients: [${form.filing.i.map(q).join(', ')}]`,
+      `holidays: [${form.filing.h.map(q).join(', ')}]`,
       '',
       '# ── Henry’s introduction ──',
       'intro:',
@@ -791,6 +835,7 @@
     $('servings').value = draft.servings || '';
     $('ingredients').value = draft.ingredientsText || '';
     $('notes').value = draft.notes || '';
+    if (draft.filing) setFiling(draft.filing);
     for (const step of draft.allSteps || []) addStep(step.text, step.at);
     for (const song of draft.songs || []) addSong(song);
     if (draft.transcript) {
@@ -913,6 +958,7 @@
     window.addEventListener('beforeunload', () => { if (current) saveDraft(); });
   }
 
+  buildFilingBoxes();
   wire();
   fillPicker();
 })();

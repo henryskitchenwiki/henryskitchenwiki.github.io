@@ -16,16 +16,19 @@ public sealed class RecipePageModel
         .DisableHtml()   // Notes are plain Markdown; raw HTML is shown as text, never run.
         .Build();
 
-    public RecipePageModel(Video video, Recipe? recipe, IReadOnlyList<RecipeCard> more, bool noIndex)
+    /// <param name="filedUnder">Where it's filed, most useful first (see SiteData.FiledUnder).</param>
+    public RecipePageModel(Video video, Recipe? recipe, IReadOnlyList<Category> filedUnder, IReadOnlyList<RecipeCard> more, bool noIndex)
     {
         Video = video;
         Recipe = recipe;
+        FiledUnder = filedUnder;
         More = more;
         NoIndex = noIndex;
     }
 
     public Video Video { get; }
     public Recipe? Recipe { get; }
+    public IReadOnlyList<Category> FiledUnder { get; }
     public IReadOnlyList<RecipeCard> More { get; }
     public bool NoIndex { get; }
 
@@ -64,52 +67,22 @@ public sealed class RecipePageModel
         }
     }
 
-    /// <summary>
-    /// Where the recipe is filed, for the breadcrumb: e.g. ("By Ingredient", "Beef").
-    /// Null until a reviewer files it.
-    /// </summary>
-    public (string Section, string Name)? Filed
+    /// <summary>The main category, for the breadcrumb and card labels, e.g. Beef. Null if not filed.</summary>
+    public Category? Filed => FiledUnder.Count > 0 ? FiledUnder[0] : null;
+
+    /// <summary>"By Ingredient", "By Holiday" or "Collections", for the breadcrumb.</summary>
+    public static string SectionName(CategoryKind kind) => kind switch
     {
-        get
-        {
-            if (Recipe is null)
-            {
-                return null;
-            }
-
-            if (Recipe.MainIngredients.Count > 0)
-            {
-                return ("By Ingredient", Readable(Recipe.MainIngredients[0]));
-            }
-
-            if (Recipe.Holidays.Count > 0)
-            {
-                return ("By Holiday", Readable(Recipe.Holidays[0]));
-            }
-
-            if (Recipe.Collections.Count > 0)
-            {
-                return ("Collections", Readable(Recipe.Collections[0]));
-            }
-
-            return null;
-        }
-    }
+        CategoryKind.Ingredient => "By Ingredient",
+        CategoryKind.Holiday => "By Holiday",
+        _ => "Collections",
+    };
 
     /// <summary>The Notes section as HTML, or null when there are no notes.</summary>
     public string? NotesHtml =>
         Recipe is { Notes: var notes } && !string.IsNullOrWhiteSpace(notes)
             ? Markdown.ToHtml(notes, NotesPipeline)
             : null;
-
-    /// <summary>Turns a filing word like "dinner-for-one" into "Dinner for One".</summary>
-    internal static string Readable(string slug)
-    {
-        string[] smallWords = ["a", "an", "and", "for", "of", "on", "the", "to", "with"];
-        var words = slug.Split('-', StringSplitOptions.RemoveEmptyEntries);
-        return string.Join(' ', words.Select((word, i) =>
-            i > 0 && smallWords.Contains(word) ? word : char.ToUpperInvariant(word[0]) + word[1..]));
-    }
 }
 
 /// <summary>A small card linking to another recipe, used in "More from Henry’s Kitchen".</summary>

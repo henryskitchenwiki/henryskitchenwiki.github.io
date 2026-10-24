@@ -38,6 +38,9 @@ public sealed record Recipe
     public IReadOnlyList<string> MainIngredients { get; init; } = [];
     public IReadOnlyList<string> Holidays { get; init; } = [];
 
+    /// <summary>Where the recipe file says it's filed.</summary>
+    public Filing Filing => new(MainIngredients, Collections, Holidays);
+
     public required RecipeIntro Intro { get; init; }
 
     public string? Servings { get; init; }

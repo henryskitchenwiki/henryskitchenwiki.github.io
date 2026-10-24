@@ -117,7 +117,9 @@ internal static class SearchIndex
     private static IEnumerable<string> Filing(Recipe? recipe) =>
         recipe is null
             ? Enumerable.Empty<string>()
-            : recipe.MainIngredients.Concat(recipe.Collections).Concat(recipe.Holidays)
+            : recipe.MainIngredients.Concat(recipe.Collections)
+                // Holidays also count as "holiday", so the home page's Holidays circle finds them.
+                .Concat(recipe.Holidays.Select(h => h + " holiday"))
                 .Select(slug => slug.Replace('-', ' '));
 
     private static string Join(IEnumerable<string>? parts) =>

@@ -59,8 +59,15 @@
           var original = shareButton.textContent;
           shareButton.textContent = 'Link copied';
           setTimeout(function () { shareButton.textContent = original; }, 2000);
-        });
+        }).catch(function () { showLink(shareData.url); });
+      } else {
+        showLink(shareData.url);
       }
     }
   });
+
+  // When the browser won't share or copy, show the address so it can be copied by hand.
+  function showLink(url) {
+    window.prompt('Copy this link:', url);
+  }
 })();

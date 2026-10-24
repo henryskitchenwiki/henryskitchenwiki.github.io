@@ -27,6 +27,8 @@
 textarea.field { resize: vertical; line-height: 1.45; }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
 .btn-link { background: none; border: 0; color: var(--ribbon); font-weight: 700; text-decoration: underline; padding: 0 6px; min-height: 36px; cursor: pointer; }
+.edit-status { margin: 4px 0 0; padding: 8px 12px; background: var(--butter-paper); border-radius: 6px; font-size: 16px; }
+.edit-status .btn-link { padding: 0 4px; min-height: 32px; }
 .check { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 16px; }
 
 /* Time boxes with a stopwatch button beside them. */

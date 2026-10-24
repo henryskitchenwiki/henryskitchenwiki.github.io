@@ -7,7 +7,14 @@
  *   2. Watch                -> YouTube player with nudge buttons and keyboard shortcuts
  *   3. Paste the transcript -> writer copies YouTube's "Show transcript" panel by hand
  *   4-9. Fill in the recipe -> drafts save automatically in this browser
- *   10. Send to the Kitchen -> opens GitHub's "new file" page with the recipe pre-filled
+ *   10. Where it's filed    -> tick boxes from the category list
+ *   11. Send to the Kitchen -> a new recipe opens GitHub's "new file" page, filled in;
+ *                              an edit copies the file and opens GitHub's edit page to paste into
+ *
+ * Recipes already on the site open as an edit: the Desk loads the published version
+ * from /assets/data/recipes/<id>.json (written by the site build, SiteBuilder/RecipeData.cs).
+ * Fields the Desk has no boxes for (extra stats, hero image, search aliases, the
+ * original writer) come along in its "keep" section and go back into the file untouched.
  *
  * Rules this file follows:
  *   - Text typed or pasted by people is only ever placed with textContent/value,
@@ -20,6 +27,9 @@
 
   // ---- Settings ------------------------------------------------------------
   const REPO_NEW_FILE_URL = 'https://github.com/henryskitchenwiki/henryskitchenwiki.github.io/new/main';
+  const REPO_EDIT_URL = 'https://github.com/henryskitchenwiki/henryskitchenwiki.github.io/edit/main/';
+  const SITE_VERSION_FOLDER = '/assets/data/recipes/';
+  const IS_MAC = /Mac|iPhone|iPad/.test(navigator.userAgent);
   const RECIPE_FOLDER = 'content/recipes/';
   const MAX_URL_LENGTH = 7500;          // longer links can be cut off by browsers or GitHub
   const NUDGE_SECONDS = 3;
@@ -50,6 +60,11 @@
   let segments = [];      // transcript lines: { time: seconds or null, text }
   let lastAnchor = -1;    // for shift-click selection of transcript lines
   let lastTimeScope = null;
+  let dirty = false;      // true once the writer changes something, so just looking never saves a draft
+
+  // For recipes already on the site (current.w):
+  let siteVersion = null; // the published version, in the same shape as a draft
+  let siteHash = '';      // a fingerprint of it, so a draft knows which version it was based on
 
   // ---- Small helpers -------------------------------------------------------
   function storageGet(key) {
@@ -182,7 +197,11 @@
   function chooseRecipe(videoId) {
     if (current) saveDraft();
     current = recipes.find((r) => r.v === videoId) || null;
+    dirty = false;
+    siteVersion = null;
+    siteHash = '';
     clearForm();
+    showEditStatus('');
     if (!current) { $('recipe-facts').textContent = ''; return; }
 
     storageSet(LAST_RECIPE_KEY, current.v);
@@ -193,16 +212,114 @@
     $('recipe-facts').textContent =
       current.t + ' · ' + (current.e ? `Episode ${current.e} · ` : '') +
       `Aired ${current.d} · ${formatTime(current.l)} long · File name: ${current.s}.md`;
-    if (current.w) {
-      $('recipe-facts').textContent += ' · Already on the site.';
-    }
     $('title').value = current.t.replace(/^how to make\s+(?:(?:a|an|the)\s+)?/i, '');
     loadVideo(current.v);
     $('get-transcript').href = 'https://www.youtube.com/watch?v=' + encodeURIComponent(current.v);
     setFiling(current.f);
-    restoreDraft();
+    $('handle').value = $('handle').value || storageGet(HANDLE_KEY) || '';
+    showSendMode();
+
+    if (current.w) {
+      openSiteVersion(current);
+    } else {
+      const draft = readDraft();
+      if (draft) {
+        fillForm(draft);
+        $('draft-status').textContent = `Picked up your draft from ${when(draft.savedAt)}.`;
+      } else {
+        $('draft-status').textContent = '';
+      }
+      if ($('steps').children.length === 0) addStep();
+      updatePreview();
+    }
+  }
+
+  // ---- Editing a recipe that's already on the site ------------------------
+  /**
+   * Loads the published version and decides what to show:
+   *   - no draft                          -> the version on the site
+   *   - a draft based on that version     -> the draft (the writer's edit in progress)
+   *   - an older draft (from before it    -> the version on the site, with a button to
+   *     was published, or before someone      use the draft instead
+   *     else's edit)
+   */
+  async function openSiteVersion(recipe) {
+    const form = $('recipe-form');
+    form.inert = true;   // nothing to type into until we know which version to show
+    showEditStatus('Loading the version on the site…');
+    let text = null;
+    try {
+      const response = await fetch(SITE_VERSION_FOLDER + encodeURIComponent(recipe.s) + '.json', { cache: 'no-cache' });
+      if (response.ok) text = await response.text();
+    } catch (e) {
+      text = null;
+    }
+    if (current !== recipe) return;   // the writer picked another recipe while this loaded
+    form.inert = false;
+
+    const draft = readDraft();
+    try { siteVersion = text ? JSON.parse(text) : null; } catch (e) { siteVersion = null; }
+    if (!siteVersion) {
+      // Without the published version an edit could drop parts of the recipe, so sending waits for it.
+      if (draft) fillForm(draft);
+      showEditStatus('Couldn’t load the version on the site. Reload the page to try again.');
+    } else {
+      siteHash = fingerprint(text);
+      if (draft && draft.basedOn === siteHash) {
+        fillForm(draft);
+        showEditStatus(`Editing your changes from ${when(draft.savedAt)}.`, 'Load the version on the site', clearDraft);
+      } else {
+        fillForm(siteVersion);
+        if (draft) showEditStatus(`Editing the version on the site. You also have a draft from ${when(draft.savedAt)}.`, 'Use my draft instead', useOldDraft);
+        else showEditStatus('Editing the version on the site.');
+      }
+    }
     if ($('steps').children.length === 0) addStep();
     updatePreview();
+  }
+
+  /** Swaps the version on the site for the writer's older draft. */
+  function useOldDraft() {
+    const draft = readDraft();
+    if (!draft) return;
+    fillForm(draft);
+    changed();
+    showEditStatus(`Editing your changes from ${when(draft.savedAt)}.`, 'Load the version on the site', clearDraft);
+  }
+
+  /** The line under the recipe facts, with an optional button. Empty text hides it. */
+  function showEditStatus(text, buttonText, onClick) {
+    $('edit-status-text').textContent = text;
+    $('edit-status').hidden = !text;
+    const button = $('edit-status-button');
+    button.hidden = !buttonText;
+    button.textContent = buttonText || '';
+    button.onclick = onClick || null;
+  }
+
+  /** Wording that changes between writing a new recipe and editing one. */
+  function showSendMode() {
+    const editing = Boolean(current && current.w);
+    $('send').textContent = editing ? 'Send my changes' : 'Send to the Kitchen';
+    $('send-about').textContent = editing
+      ? 'Opens the recipe on GitHub, with your version copied to paste in.'
+      : 'Opens GitHub with your recipe filled in.';
+    $('clear-draft').textContent = editing ? 'Undo my changes' : 'Start this recipe over';
+  }
+
+  /** A short fingerprint of some text (FNV-1a). Only used to tell versions apart, not for security. */
+  function fingerprint(text) {
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < text.length; i++) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return hash.toString(16);
+  }
+
+  function when(iso) {
+    const date = new Date(iso);
+    return Number.isNaN(date.getTime()) ? 'earlier' : date.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
 
   function clearForm() {
@@ -523,6 +640,7 @@
       item.querySelector('.song-album').value = song.album || '';
       item.querySelector('.song-link').value = song.link || '';
       item.querySelector('.song-heard').checked = Boolean(song.heard);
+      if (song.artist) item.dataset.artist = song.artist;
     }
     $('songs').append(item);
     return item;
@@ -550,7 +668,8 @@
         title: item.querySelector('.song-title').value.trim(),
         album: item.querySelector('.song-album').value.trim(),
         link: item.querySelector('.song-link').value.trim(),
-        heard: item.querySelector('.song-heard').checked
+        heard: item.querySelector('.song-heard').checked,
+        artist: item.dataset.artist || 'José Suicidio'
       })).filter((s) => s.title),
       notes: $('notes').value.trim(),
       filing: getFiling()
@@ -563,6 +682,7 @@
     const problems = [];
     const warnings = [];
     if (!current) problems.push('Pick a recipe at the top of the page first.');
+    if (current && current.w && !siteVersion) problems.push('The version on the site didn’t load. Reload the page and try again.');
     if (!form.title) problems.push('The recipe needs a title.');
     if (!form.handle) problems.push('Add your name in step 4.');
     if (!form.introParagraphs.length) problems.push('Add Henry’s introduction.');
@@ -679,8 +799,16 @@
     } else {
       lines.push('    ');
     }
-    lines.push('', '# ── Recipe card ──', form.servings ? `servings: ${q(form.servings)}` : 'servings:', 'stats: []',
-      `ingredients_at: ${q(form.ingredientsAt)}`);
+    // Parts the Desk has no boxes for come from the version on the site, unchanged.
+    const keep = (current.w && siteVersion && siteVersion.keep) || {};
+    lines.push('', '# ── Recipe card ──', form.servings ? `servings: ${q(form.servings)}` : 'servings:');
+    if (keep.stats && keep.stats.length) {
+      lines.push('stats:');
+      for (const stat of keep.stats) lines.push(`  - label: ${q(stat.label)}`, `    value: ${q(stat.value)}`);
+    } else {
+      lines.push('stats: []');
+    }
+    lines.push(`ingredients_at: ${q(form.ingredientsAt)}`);
     if (form.ingredients.length) {
       lines.push('ingredients:');
       for (const item of form.ingredients) lines.push(`  - ${q(item)}`);
@@ -698,14 +826,16 @@
     if (form.songs.length) {
       lines.push('songs:');
       for (const song of form.songs) {
-        lines.push(`  - title: ${q(song.title)}`, '    artist: "José Suicidio"', `    album: ${q(song.album)}`,
+        lines.push(`  - title: ${q(song.title)}`, `    artist: ${q(song.artist)}`, `    album: ${q(song.album)}`,
           `    heard_in_episode: ${song.heard}`, `    youtube_music: ${q(song.link)}`);
       }
     } else {
       lines.push('songs: []');
     }
-    lines.push('', '# ── Extras ──', 'hero_image: ""', 'search_aliases: []',
-      `written_up_by: ${q(toHandle(form.handle))}`, '---');
+    // written_up_by stays with whoever first wrote the recipe up.
+    lines.push('', '# ── Extras ──', `hero_image: ${q(keep.heroImage || '')}`,
+      `search_aliases: [${(keep.searchAliases || []).map(q).join(', ')}]`,
+      `written_up_by: ${q(keep.writtenUpBy || toHandle(form.handle))}`, '---');
     if (form.notes) lines.push('', form.notes);
     return lines.join('\n') + '\n';
   }
@@ -742,9 +872,11 @@
     if (!readyToGo(form)) return;
     const file = buildFile(form);
     const filename = RECIPE_FOLDER + current.s + '.md';
-    const fullUrl = `${REPO_NEW_FILE_URL}?filename=${encodeURIComponent(filename)}&value=${encodeURIComponent(file)}`;
     saveDraft();
+    if (current.w) { await sendEdit(file, filename); return; }
 
+    const fullUrl = `${REPO_NEW_FILE_URL}?filename=${encodeURIComponent(filename)}&value=${encodeURIComponent(file)}`;
+    const alreadyThere = 'If GitHub says the file already exists, someone has just added this recipe. Reload the Desk in a few minutes and it will open as an edit.';
     if (fullUrl.length <= MAX_URL_LENGTH) {
       window.open(fullUrl, '_blank', 'noopener');
       showNextSteps('In the GitHub tab:', [
@@ -752,17 +884,39 @@
         'If asked to fork the repository, click Fork.',
         'Click Propose new file.',
         'Click Create pull request, then Create pull request again.'
-      ]);
+      ], alreadyThere);
       return;
     }
     // Too long to fit in a web address: copy it instead and open an empty page to paste into.
-    const copied = await copyText(file);
+    // The copy starts before the new tab opens, while this page still has focus.
+    const copying = copyText(file);
     window.open(`${REPO_NEW_FILE_URL}?filename=${encodeURIComponent(filename)}`, '_blank', 'noopener');
+    const copied = await copying;
     showNextSteps('This recipe is too long to send in one go. In the GitHub tab:', [
       copied
         ? 'Paste the recipe into the big empty box (it’s already copied).'
         : 'Come back here, open “See the recipe file”, click Copy file, and paste it into the big empty box.',
       'Click Propose new file.',
+      'Click Create pull request, then Create pull request again.'
+    ], alreadyThere);
+  }
+
+  /**
+   * GitHub's edit page can't be filled in from a link, so the Desk copies the
+   * whole file and the writer pastes it over the old one.
+   */
+  async function sendEdit(file, filename) {
+    const copying = copyText(file);
+    window.open(REPO_EDIT_URL + filename, '_blank', 'noopener');
+    const copied = await copying;
+    const keys = IS_MAC ? '⌘A, then ⌘V' : 'Ctrl+A, then Ctrl+V';
+    showNextSteps('In the GitHub tab:', [
+      'Sign in if asked.',
+      'If asked to fork the repository, click Fork this repository.',
+      copied
+        ? `Click in the file, then select everything and paste (${keys}). Your version is already copied.`
+        : `Come back here, open “See the recipe file” and click Copy file. Then click in the file on GitHub, select everything and paste (${keys}).`,
+      'Click Commit changes, then Propose changes.',
       'Click Create pull request, then Create pull request again.'
     ]);
   }
@@ -783,7 +937,7 @@
   }
 
   /** A short heading and a numbered list of what to do next. */
-  function showNextSteps(heading, steps) {
+  function showNextSteps(heading, steps, note) {
     const box = $('send-results');
     box.replaceChildren();
     const p = document.createElement('p');
@@ -798,12 +952,21 @@
     }
     box.append(p);
     if (steps.length) box.append(list);
+    if (note) {
+      const extra = document.createElement('p');
+      extra.className = 'hint';
+      extra.textContent = note;
+      box.append(extra);
+    }
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   // ---- Drafts --------------------------------------------------------------
   function saveDraft() {
-    if (!current) return;
+    if (!current || !dirty) return;
+    // An edit is only saved once the version on the site has loaded, so a draft
+    // always knows which version it was based on.
+    if (current.w && !siteVersion) return;
     const form = readForm();
     form.introText = $('intro-text').value;
     form.ingredientsText = $('ingredients').value;
@@ -812,42 +975,52 @@
     }));
     form.transcript = $('transcript-paste').value;
     form.savedAt = new Date().toISOString();
+    if (current.w) form.basedOn = siteHash;
     const saved = storageSet(DRAFT_PREFIX + current.v, JSON.stringify(form));
     storageSet(HANDLE_KEY, form.handle);
     $('draft-status').textContent = saved
       ? `Draft saved in this browser at ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`
       : 'Drafts can’t be saved in this browser, so finish this one before closing the page.';
+    // Once the writer starts changing the version on the site, an older draft is replaced.
+    if (current.w && $('edit-status-button').onclick === useOldDraft) showEditStatus('Editing the version on the site.');
   }
 
-  function restoreDraft() {
-    $('handle').value = $('handle').value || storageGet(HANDLE_KEY) || '';
-    let draft = null;
-    try { draft = JSON.parse(storageGet(DRAFT_PREFIX + current.v) || 'null'); } catch (e) { draft = null; }
-    if (!draft) { $('draft-status').textContent = ''; return; }
-    $('title').value = draft.title || $('title').value;
-    $('subtitle').value = draft.subtitle || '';
-    $('handle').value = draft.handle || $('handle').value;
-    $('intro-start').value = draft.introStart || '';
-    $('intro-end').value = draft.introEnd || '';
-    $('intro-source').value = draft.introSource || 'transcript-panel';
-    $('intro-text').value = draft.introText || '';
-    $('ingredients-at').value = draft.ingredientsAt || '';
-    $('servings').value = draft.servings || '';
-    $('ingredients').value = draft.ingredientsText || '';
-    $('notes').value = draft.notes || '';
-    if (draft.filing) setFiling(draft.filing);
-    for (const step of draft.allSteps || []) addStep(step.text, step.at);
-    for (const song of draft.songs || []) addSong(song);
-    if (draft.transcript) {
-      $('transcript-paste').value = draft.transcript;
+  function readDraft() {
+    try { return JSON.parse(storageGet(DRAFT_PREFIX + current.v) || 'null'); } catch (e) { return null; }
+  }
+
+  /** Fills the form from a draft or from the version on the site (they share a shape). */
+  function fillForm(data) {
+    $('title').value = data.title || $('title').value;
+    $('subtitle').value = data.subtitle || '';
+    if (data.handle) $('handle').value = data.handle;
+    $('intro-start').value = data.introStart || '';
+    $('intro-end').value = data.introEnd || '';
+    $('intro-source').value = data.introSource || 'transcript-panel';
+    $('intro-text').value = data.introText || '';
+    $('ingredients-at').value = data.ingredientsAt || '';
+    $('servings').value = data.servings || '';
+    $('ingredients').value = data.ingredientsText || '';
+    $('notes').value = data.notes || '';
+    if (data.filing) setFiling(data.filing);
+    $('steps').replaceChildren();
+    for (const step of data.allSteps || []) addStep(step.text, step.at);
+    $('songs').replaceChildren();
+    for (const song of data.songs || []) addSong(song);
+    // The site version has no transcript, so a transcript already pasted stays.
+    if (data.transcript) {
+      $('transcript-paste').value = data.transcript;
       readTranscript();
     }
-    $('draft-status').textContent = `Picked up your draft from ${new Date(draft.savedAt).toLocaleString()}.`;
+    for (const box of document.querySelectorAll('.is-bad')) box.classList.remove('is-bad');
   }
 
   function clearDraft() {
     if (!current) return;
-    if (!window.confirm('Start this recipe over? Your draft for it will be deleted.')) return;
+    const question = current.w
+      ? 'Go back to the version on the site? Your changes will be deleted.'
+      : 'Start this recipe over? Your draft for it will be deleted.';
+    if (!window.confirm(question)) return;
     storageRemove(DRAFT_PREFIX + current.v);
     const videoId = current.v;
     current = null;   // so chooseRecipe doesn't save the old draft back
@@ -857,6 +1030,7 @@
 
   let saveTimer = 0;
   function changed() {
+    dirty = true;
     updatePreview();
     window.clearTimeout(saveTimer);
     saveTimer = window.setTimeout(saveDraft, 600);

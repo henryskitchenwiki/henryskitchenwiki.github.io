@@ -128,6 +128,11 @@ internal static class SiteBuilder
         await WriteFileAsync(options.OutputFolder, "index.html", "<!DOCTYPE html>\n" + StripDoctype(homeHtml));
 
         await WriteFileAsync(options.OutputFolder, "assets/js/recipes-data.js", DeskData(site));
+        foreach (var recipe in site.Recipes.Values)
+        {
+            await WriteFileAsync(options.OutputFolder, $"{RecipeData.Folder}/{recipe.Id}.json", RecipeData.ToJson(recipe));
+        }
+
         await WriteFileAsync(options.OutputFolder, "assets/js/search-index.js", SearchIndex.Write(site, searchWords));
 
         Console.WriteLine($"Done: {videos.Count} recipe pages written to {Path.GetRelativePath(root, options.OutputFolder)}/");

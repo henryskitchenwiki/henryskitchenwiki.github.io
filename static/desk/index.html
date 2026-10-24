@@ -32,7 +32,6 @@
 
     <section class="panel" aria-labelledby="pick-heading">
       <h2 id="pick-heading">1. Pick a recipe</h2>
-      <p class="hint">Check the writers’ channel on Discord first, so two people don’t write up the same recipe.</p>
       <label class="field-label" for="recipe-search">Find a recipe</label>
       <input id="recipe-search" class="field" type="search" placeholder="Type a name or episode number, e.g. meatloaf or 70" autocomplete="off">
       <label class="check"><input id="still-needed" type="checkbox"> Only show recipes that still need writing up</label>
@@ -57,21 +56,20 @@
           <li><kbd>Alt</kbd>+<kbd>P</kbd> play or pause</li>
           <li><kbd>Alt</kbd>+<kbd>J</kbd> back 3 seconds · <kbd>Alt</kbd>+<kbd>L</kbd> forward 3 seconds</li>
           <li><kbd>Alt</kbd>+<kbd>S</kbd> slow down or back to normal speed</li>
-          <li><kbd>Alt</kbd>+<kbd>T</kbd> stamp the current video time into the time box you’re working in</li>
+          <li><kbd>Alt</kbd>+<kbd>T</kbd> stamp the current time</li>
         </ul>
       </details>
     </section>
 
     <section class="panel" aria-labelledby="transcript-heading">
       <h2 id="transcript-heading">3. Copy Henry’s words from YouTube</h2>
-      <p class="hint">YouTube keeps a typed-up transcript of each episode. It takes about a minute to bring it over:</p>
       <ol class="get-steps">
-        <li><a class="btn btn-primary btn-small" id="get-transcript" href="https://www.youtube.com/" target="_blank" rel="noopener">Get the transcript</a> opens this episode on YouTube in a new tab.</li>
-        <li>Under the video, click <strong>…more</strong> to open the description, then click <strong>Show transcript</strong> near the bottom. The transcript appears beside the video.</li>
-        <li>Pause the video. Click just before the first time in the transcript and drag down to the last line (the transcript scrolls as you drag). Then copy: <kbd>Ctrl</kbd>+<kbd>C</kbd>, or <kbd>Cmd</kbd>+<kbd>C</kbd> on a Mac.</li>
-        <li>Come back to this tab and paste in the box below. The Desk reads it straight away.</li>
+        <li><a class="btn btn-primary btn-small" id="get-transcript" href="https://www.youtube.com/" target="_blank" rel="noopener">Get the transcript</a> (opens YouTube)</li>
+        <li>Click <strong>…more</strong>, then <strong>Show transcript</strong>.</li>
+        <li>Select from the first line to the last, and copy.</li>
+        <li>Paste it below.</li>
       </ol>
-      <p class="hint">No <strong>Show transcript</strong> button? That episode has no captions. Type Henry’s words by ear instead, and set “Where the words came from” to <em>Typed by ear</em>.</p>
+      <p class="hint">No transcript? Type it by ear and choose <em>Typed by ear</em>.</p>
       <label class="visually-hidden" for="transcript-paste">Transcript copied from YouTube</label>
       <textarea id="transcript-paste" class="field" rows="4" placeholder="Paste the transcript here"></textarea>
       <div class="row">
@@ -93,17 +91,16 @@
 
     <section class="panel" aria-labelledby="about-heading">
       <h2 id="about-heading">4. The recipe</h2>
-      <label class="field-label" for="title">Title, as Henry titles it</label>
+      <label class="field-label" for="title">Title</label>
       <input id="title" class="field" type="text">
-      <label class="field-label" for="subtitle">One-line description <span class="optional">(optional, ideally Henry’s words)</span></label>
+      <label class="field-label" for="subtitle">Description <span class="optional">(optional)</span></label>
       <input id="subtitle" class="field" type="text" placeholder="e.g. Henry’s chipped beef on toast.">
-      <label class="field-label" for="handle">Your name in the community</label>
+      <label class="field-label" for="handle">Your name</label>
       <input id="handle" class="field" type="text" placeholder="e.g. BeanyBobeanie" autocomplete="nickname">
     </section>
 
     <section class="panel" aria-labelledby="intro-heading">
       <h2 id="intro-heading">5. Henry’s introduction</h2>
-      <p class="hint">Henry’s own words from the start of the episode. Fix spelling and punctuation only.</p>
       <div class="time-row">
         <div data-time-scope>
           <label class="field-label" for="intro-start">Starts at</label>
@@ -131,7 +128,7 @@
       <h2 id="card-heading">6. Ingredients</h2>
       <div class="time-row">
         <div data-time-scope>
-          <label class="field-label" for="ingredients-at">Henry lists them at <span class="optional">(optional)</span></label>
+          <label class="field-label" for="ingredients-at">Listed at <span class="optional">(optional)</span></label>
           <div class="time-field"><input id="ingredients-at" class="field time" type="text" inputmode="numeric" placeholder="m:ss"><button type="button" class="btn btn-outline btn-small stamp" aria-label="Use the current video time for the ingredient list">⏱</button></div>
         </div>
         <div>
@@ -139,37 +136,33 @@
           <input id="servings" class="field" type="text" placeholder="e.g. 1">
         </div>
       </div>
-      <label class="field-label" for="ingredients">Ingredients, one per line, as Henry says them</label>
+      <label class="field-label" for="ingredients">Ingredients (one per line)</label>
       <textarea id="ingredients" class="field" rows="7" placeholder="1 cup reduced-fat milk&#10;¼ cup flour"></textarea>
       <button type="button" class="btn btn-small btn-link" data-tidy="ingredients">Tidy text</button>
     </section>
 
     <section class="panel" aria-labelledby="steps-heading">
       <h2 id="steps-heading">7. Steps</h2>
-      <p class="hint">One step per box, in Henry’s words. Add the time each step starts so readers get a “Watch this step” button. Leave the time blank if you’re not sure.</p>
       <ol id="steps" class="step-list"></ol>
       <button type="button" class="btn btn-outline btn-small" id="add-step">+ Add a step</button>
     </section>
 
     <section class="panel" aria-labelledby="songs-heading">
       <h2 id="songs-heading">8. Songs <span class="optional">(optional)</span></h2>
-      <p class="hint">José Suicidio tracks heard in the episode or written about the dish.</p>
       <ol id="songs" class="song-list"></ol>
       <button type="button" class="btn btn-outline btn-small" id="add-song">+ Add a song</button>
     </section>
 
     <section class="panel" aria-labelledby="notes-heading">
       <h2 id="notes-heading">9. Notes <span class="optional">(optional)</span></h2>
-      <label class="field-label" for="notes">Shown under “Notes” on the recipe card. Short, factual, deadpan.</label>
+      <label class="visually-hidden" for="notes">Notes</label>
       <textarea id="notes" class="field" rows="3" placeholder="e.g. Henry serves this on untoasted bread."></textarea>
     </section>
 
     <section class="panel finish" aria-labelledby="finish-heading">
       <h2 id="finish-heading">10. Send it to the kitchen</h2>
-      <p class="hint">Royal Flush reads every recipe before it goes on the site.</p>
 
       <div class="send-step">
-        <h3>Check your recipe</h3>
         <button type="button" class="btn btn-outline" id="check">Check my recipe</button>
         <div id="check-results" aria-live="polite"></div>
       </div>
@@ -192,7 +185,6 @@
       <details>
         <summary>See the recipe file</summary>
         <pre id="file-preview" class="file-preview"></pre>
-        <p class="hint">Make changes in the boxes above, not here.</p>
         <div class="row">
           <button type="button" class="btn btn-outline btn-small" id="copy-file">Copy file</button>
         </div>

@@ -15,15 +15,16 @@ const indexFile = path.join(site, 'assets/js/search-index.js');
 const sandbox = { window: {} };
 vm.runInNewContext(fs.readFileSync(indexFile, 'utf8'), sandbox);
 const recipes = sandbox.window.HK_SEARCH_INDEX;
+const relatedWords = sandbox.window.HK_SEARCH_WORDS;
 
 const HKSearch = require(path.join(site, 'assets/js/search-engine.js'));
-const search = HKSearch.create(recipes);
+const search = HKSearch.create(recipes, relatedWords);
 const { cases } = JSON.parse(fs.readFileSync(path.join(__dirname, 'search-cases.json'), 'utf8'));
 const known = new Set(recipes.map((r) => r.id));
 
 let failed = 0;
 for (const c of cases) {
-  const { matches, closeMatches } = search.search(c.query);
+  const { matches, closeMatches, suggestion } = search.search(c.query);
   const ids = matches.map((r) => r.id);
   const problems = [];
   for (const id of [c.top, ...(c.includes || [])].filter(Boolean)) {
@@ -32,6 +33,9 @@ for (const c of cases) {
   if (c.top && ids[0] !== c.top) problems.push(`expected ${c.top} first, got ${ids[0] || 'nothing'}`);
   for (const id of c.includes || []) {
     if (!ids.includes(id)) problems.push(`expected ${id} in the results`);
+  }
+  if ('suggests' in c && suggestion !== c.suggests) {
+    problems.push(`expected "Did you mean" to suggest ${JSON.stringify(c.suggests)}, got ${JSON.stringify(suggestion)}`);
   }
 
   if (problems.length) {

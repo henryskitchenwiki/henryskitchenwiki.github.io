@@ -33,11 +33,13 @@ internal static class SiteBuilder
         }
 
         var loaded = RecipeLoader.LoadFolder(Path.Combine(root, "content", "recipes"), root);
+        var searchWords = SearchIndex.LoadWords(root, out var wordProblems);
 
         // 2. Check.
         var checkedRecipes = RecipeValidator.Validate(loaded, catalog, options.Launch);
-        ProblemReport.Print(checkedRecipes.Problems);
-        if (checkedRecipes.HasErrors)
+        var problems = checkedRecipes.Problems.Concat(wordProblems).ToList();
+        ProblemReport.Print(problems);
+        if (problems.Any(p => p.Severity == Severity.Error))
         {
             Console.WriteLine("Stopped: fix the errors above, then build again.");
             return 1;
@@ -71,7 +73,7 @@ internal static class SiteBuilder
         }
 
         await WriteFileAsync(options.OutputFolder, "assets/js/recipes-data.js", DeskData(videos, recipes));
-        await WriteFileAsync(options.OutputFolder, "assets/js/search-index.js", SearchIndex.Write(videos, recipes));
+        await WriteFileAsync(options.OutputFolder, "assets/js/search-index.js", SearchIndex.Write(videos, recipes, searchWords));
 
         Console.WriteLine($"Done: {videos.Count} recipe pages written to {Path.GetRelativePath(root, options.OutputFolder)}/");
         return 0;

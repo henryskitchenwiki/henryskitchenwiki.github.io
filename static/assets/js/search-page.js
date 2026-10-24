@@ -28,7 +28,13 @@
   let matches;
   let closeMatches = [];
   if (query) {
-    ({ matches, closeMatches } = window.HKSearch.create(recipes).search(query));
+    const results = window.HKSearch.create(recipes, window.HK_SEARCH_WORDS).search(query);
+    ({ matches, closeMatches } = results);
+    if (results.suggestion) {
+      $('did-you-mean-link').textContent = results.suggestion;
+      $('did-you-mean-link').href = '/search/?q=' + encodeURIComponent(results.suggestion);
+      $('did-you-mean').hidden = false;
+    }
     $('results-heading').textContent = 'Results for “' + query + '”';
     document.title = 'Results for ' + query + ' | Henry’s Kitchen';
   } else {

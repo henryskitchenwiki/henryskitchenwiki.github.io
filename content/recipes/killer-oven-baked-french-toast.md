@@ -17,11 +17,11 @@ holidays: []
 
 # ── Henry’s introduction ──
 intro:
-  start: "0:11"
-  end: "0:22"
-  source: manual
+  start: "0:22"
+  end: "0:32"
+  source: transcript-panel
   text: |
-    Hello and welcome to Henry’s Kitchen where today we’re going to be making delicious ovenbaked French toast.
+    French toast was originally originated by the French in the early 6th century and they called it 'pan peru' which in English translates to 'lost bread'.
 
 # ── Recipe card ──
 servings: "2 - 4"

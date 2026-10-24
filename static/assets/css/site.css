@@ -449,3 +449,6 @@ a.tile:hover .circle { outline: 3px solid var(--ribbon); outline-offset: 3px; }
   .step-number { background: none; color: #000000; border: 1px solid #000000; }
   .steps li { break-inside: avoid; }
 }
+
+/* "Spotted a mistake? Suggest a fix" under a written-up recipe. */
+.suggest-fix { margin: -16px 0 0; color: var(--pencil); font-size: 16px; }

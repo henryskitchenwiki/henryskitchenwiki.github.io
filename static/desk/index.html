@@ -35,6 +35,7 @@
       <label class="field-label" for="recipe-pick">Recipe <span class="optional" id="recipe-count"></span></label>
       <select id="recipe-pick" class="field"></select>
       <p class="hint" id="recipe-facts"></p>
+      <p class="edit-status" id="edit-status" aria-live="polite" hidden><span id="edit-status-text"></span> <button type="button" class="btn btn-small btn-link" id="edit-status-button" hidden></button></p>
     </section>
 
     <section class="panel" aria-labelledby="watch-heading">
@@ -181,7 +182,7 @@
       <div class="send-choices">
         <div class="send-choice">
           <h3>Have a GitHub account?</h3>
-          <p>Opens GitHub with your recipe filled in.</p>
+          <p id="send-about">Opens GitHub with your recipe filled in.</p>
           <button type="button" class="btn btn-primary" id="send">Send to the Kitchen</button>
           <p class="hint">Need one? <a href="https://github.com/signup" target="_blank" rel="noopener">Sign up for free</a>.</p>
         </div>

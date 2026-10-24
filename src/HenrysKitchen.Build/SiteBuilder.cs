@@ -11,7 +11,8 @@ namespace HenrysKitchen.Build;
 ///   1. read data/videos.json and content/recipes/*.md
 ///   2. check them, and stop if anything has to be fixed
 ///   3. copy static/ (hand-written pages, styles, scripts, images, the Desk)
-///   4. write the home page, a page for every episode, the Desk's recipe list and the search index
+///   4. write the home page, a page for every episode, the category pages and Recipes hub,
+///      the Desk's recipe list and the search index
 /// </summary>
 internal static class SiteBuilder
 {
@@ -45,6 +46,14 @@ internal static class SiteBuilder
         if (problems.Any(p => p.Severity == Severity.Error))
         {
             Console.WriteLine("Stopped: fix the errors above, then build again.");
+            return 1;
+        }
+
+        // Category pages live under /recipes/ingredient/ and so on, so no episode may use those ids.
+        var clash = catalog.Videos.FirstOrDefault(v => CategoryPages.ReservedIds.Contains(v.Id));
+        if (clash is not null)
+        {
+            Console.Error.WriteLine($"data/videos.json: the page id \"{clash.Id}\" is used for category pages. Give that episode a different id.");
             return 1;
         }
 
@@ -90,6 +99,30 @@ internal static class SiteBuilder
             var html = await renderer.RenderAsync<RecipePage>(new Dictionary<string, object?> { [nameof(RecipePage.Model)] = model });
             await WriteFileAsync(options.OutputFolder, $"recipes/{video.Id}/index.html", "<!DOCTYPE html>\n" + StripDoctype(html));
         }
+
+        // Category pages and the Recipes hub.
+        var hubEntries = new List<(Category Category, int Count)>();
+        foreach (var category in site.Categories.All)
+        {
+            var cards = CategoryPages.CardsFor(category, site);
+            hubEntries.Add((category, cards.Count));
+            if (cards.Count == 0)
+            {
+                continue;
+            }
+
+            var categoryHtml = await renderer.RenderAsync<CategoryPage>(new Dictionary<string, object?>
+            {
+                [nameof(CategoryPage.Model)] = new CategoryPageModel(category, cards, !options.Launch),
+            });
+            await WriteFileAsync(options.OutputFolder, CategoryPages.UrlFor(category).Trim('/') + "/index.html", "<!DOCTYPE html>\n" + StripDoctype(categoryHtml));
+        }
+
+        var hubHtml = await renderer.RenderAsync<RecipesHub>(new Dictionary<string, object?>
+        {
+            [nameof(RecipesHub.Model)] = new RecipesHubModel(hubEntries, videos.Count, !options.Launch),
+        });
+        await WriteFileAsync(options.OutputFolder, "recipes/index.html", "<!DOCTYPE html>\n" + StripDoctype(hubHtml));
 
         var homeHtml = await renderer.RenderAsync<HomePage>(new Dictionary<string, object?> { [nameof(HomePage.Model)] = home });
         await WriteFileAsync(options.OutputFolder, "index.html", "<!DOCTYPE html>\n" + StripDoctype(homeHtml));

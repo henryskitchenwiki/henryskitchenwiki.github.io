@@ -1,0 +1,45 @@
+@*
+    The Recipes hub: /recipes/. Every category with its number of recipes, and
+    All Recipes A–Z. Categories with no recipes yet are left out.
+*@
+<SiteLayout Title="Recipes" Description="Every recipe from Henry’s Kitchen, by ingredient, collection and holiday." ImageUrl="@(BuildOptions.SiteUrl + "/assets/img/shingle-thumb.jpg")" NoIndex="@Model.NoIndex" CurrentSection="recipes">
+<main class="wrap stack" style="padding-top: 32px; padding-bottom: 48px; gap: 36px">
+  <div class="stack">
+    <h1 class="ribbon">Recipes</h1>
+    <p class="meta"><a class="text-link" href="/search/">All Recipes A–Z</a> · @Model.Total recipes</p>
+  </div>
+
+  @foreach (var (kind, id, heading) in Sections)
+  {
+    var categories = Model.Categories.Where(c => c.Category.Kind == kind && c.Count > 0).ToList();
+    if (categories.Count > 0)
+    {
+      <section class="stack" aria-labelledby="@($"{id}-heading")">
+        <h2 id="@id" class="hub-heading"><span id="@($"{id}-heading")">@heading</span></h2>
+        <ul class="hub-list">
+          @foreach (var (category, count) in categories)
+          {
+            <li>
+              <a href="@CategoryPages.UrlFor(category)">
+                <strong>@category.Name</strong>
+                <span>@count @(count == 1 ? "recipe" : "recipes")</span>
+              </a>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+</main>
+</SiteLayout>
+
+@code {
+    [Parameter, EditorRequired] public RecipesHubModel Model { get; set; } = default!;
+
+    private static readonly (CategoryKind Kind, string Id, string Heading)[] Sections =
+    [
+        (CategoryKind.Ingredient, "ingredients", "By Ingredient"),
+        (CategoryKind.Collection, "collections", "Collections"),
+        (CategoryKind.Holiday, "holidays", "Holidays"),
+    ];
+}

@@ -1,0 +1,20 @@
+@*
+    A list of recipe cards, the same layout as search results:
+    a grid on wider screens, a compact list on phones (see .results in site.css).
+*@
+<ul class="results">
+  @foreach (var card in Cards)
+  {
+    <li class="card">
+      <div class="thumb"><img src="https://i.ytimg.com/vi/@(card.YoutubeId)/mqdefault.jpg" alt="" width="320" height="180" loading="lazy"></div>
+      <div class="card-text">
+        <div class="kicker">@card.Kicker</div>
+        <a class="card-title" href="@card.Url"><ContentText Value="@card.Title" /></a>
+      </div>
+    </li>
+  }
+</ul>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<RecipeCard> Cards { get; set; } = [];
+}

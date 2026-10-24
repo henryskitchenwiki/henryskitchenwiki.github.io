@@ -12,10 +12,10 @@
 
   <div class="recipe-head stack">
     <nav class="kicker" aria-label="Breadcrumb">
-      <a href="/search/">Recipes</a> ›
+      <a href="@CategoryPages.HubUrl">Recipes</a> ›
       @if (Model.Filed is { } filed)
       {
-        <text>@RecipePageModel.SectionName(filed.Kind) › </text><a href="@SearchFor(filed.Name)">@filed.Name</a>
+        <a href="@CategoryPages.HubSectionUrl(filed.Kind)">@RecipePageModel.SectionName(filed.Kind)</a><text> › </text><a href="@CategoryPages.UrlFor(filed)">@filed.Name</a>
       }
       else
       {
@@ -220,9 +220,6 @@
 
     private Video Video => Model.Video;
     private Recipe? Recipe => Model.Recipe;
-
-    /// <summary>The search page address for a word, e.g. /search/?q=Beef.</summary>
-    private static string SearchFor(string text) => "/search/?q=" + Uri.EscapeDataString(text);
 
     /// <summary>Where "Watch Henry’s introduction" starts the video.</summary>
     private Timecode IntroStart => Recipe?.Intro.Start ?? new Timecode(0);

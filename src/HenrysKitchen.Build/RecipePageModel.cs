@@ -31,7 +31,8 @@ public sealed class RecipePageModel
 
     public bool IsWrittenUp => Recipe is not null;
 
-    public string Title => Recipe?.Title ?? Video.Title;
+    /// <summary>The title as shown on the site (see TitleRules): "Big Mac", not "How to Make a Big Mac".</summary>
+    public string Title => TitleRules.Display(Recipe?.Title ?? Video.Title);
 
     public string PageUrl => $"/recipes/{Video.Id}/";
 

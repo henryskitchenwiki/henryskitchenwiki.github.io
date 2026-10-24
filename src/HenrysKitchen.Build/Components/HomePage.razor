@@ -1,0 +1,118 @@
+@*
+    The home page: /index.html.
+
+    The featured recipe comes from content/home.json; The Latest and the Recipe Box
+    fill themselves from the episodes and recipes, so they stay current without
+    anyone editing this page. What to show is worked out in HomePageModel.cs.
+*@
+<SiteLayout Title="@SiteLayout.SiteName" Description="Recipes from Henry’s Kitchen, explained since 2011." ImageUrl="@Featured.ShareImageUrl" NoIndex="@Model.NoIndex">
+<div class="banner"><div class="wrap"><p>Cooking Explaining Since 2011</p></div></div>
+
+<main>
+  <div class="wrap home-top">
+    <article class="featured stack">
+      <a class="mint-mat" href="@Featured.PageUrl" aria-label="@Featured.Title">
+        <span class="photo-frame tilt" style="display: block">
+          <img src="@Featured.ImageUrl" alt="@Featured.ImageAlt" width="480" height="270">
+          <span class="corner tl" aria-hidden="true"></span><span class="corner tr" aria-hidden="true"></span><span class="corner bl" aria-hidden="true"></span><span class="corner br" aria-hidden="true"></span>
+        </span>
+      </a>
+      <div class="kicker">@FeaturedKicker</div>
+      <h1 class="ribbon"><a href="@Featured.PageUrl"><ContentText Value="@Featured.Title" /></a></h1>
+      @if (Featured.Recipe?.Subtitle is { } subtitle)
+      {
+        <p style="margin: 0; font-size: 20px"><ContentText Value="@subtitle" /></p>
+      }
+      <p class="meta">@Featured.FromLine</p>
+    </article>
+
+    <aside class="latest" aria-labelledby="latest-heading">
+      <h2 id="latest-heading">The Latest</h2>
+      <ul>
+        @foreach (var item in Model.Latest)
+        {
+          <li>
+            <div class="thumb"><img src="https://i.ytimg.com/vi/@(item.YoutubeId)/mqdefault.jpg" alt="" width="320" height="180" loading="lazy"></div>
+            <div>
+              <div class="kicker">
+                @if (item.Episode is { } episode)
+                {
+                  <text>Episode @episode · </text>
+                }
+                <span>@item.Date</span>
+              </div>
+              <a class="title" href="@item.Url"><ContentText Value="@item.Title" /></a>
+            </div>
+          </li>
+        }
+      </ul>
+    </aside>
+  </div>
+
+  <section class="section section-mint" aria-labelledby="tiles-heading">
+    <div class="wrap">
+      <h2 id="tiles-heading" style="margin-bottom: 22px">What are you cooking tonight?</h2>
+      <div class="tiles">
+        <a class="tile" href="/search/?q=dinner+for+one"><span class="circle" aria-hidden="true"></span>Dinner for One</a>
+        <a class="tile" href="/search/?q=beef"><span class="circle" aria-hidden="true"></span>Beef</a>
+        <a class="tile" href="/search/?q=holiday"><span class="circle" aria-hidden="true"></span>Holidays</a>
+        <a class="tile" href="/search/"><span class="circle" aria-hidden="true"></span>All Recipes A–Z</a>
+        <a class="tile" href="/search/?surprise=1"><span class="circle" aria-hidden="true"></span>Surprise me</a>
+      </div>
+    </div>
+  </section>
+
+  @if (Model.RecipeBox.Count > 0)
+  {
+    <section id="recipe-box" class="section" aria-labelledby="box-heading">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="box-heading">From the Recipe Box</h2>
+          <a href="/search/" class="text-link">All Recipes A–Z</a>
+        </div>
+        <div class="card-grid">
+          @foreach (var card in Model.RecipeBox)
+          {
+            <article class="card">
+              <div class="thumb"><img src="https://i.ytimg.com/vi/@(card.YoutubeId)/mqdefault.jpg" alt="" width="320" height="180" loading="lazy"></div>
+              <div class="kicker">@card.Kicker</div>
+              <a class="card-title" href="@card.Url"><ContentText Value="@card.Title" /></a>
+            </article>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  <section id="live" class="section" style="border-top: 1px solid var(--flour)" aria-labelledby="live-heading">
+    <div class="wrap live-row">
+      <div class="stack" style="flex: 1 1 360px">
+        <div class="kicker" style="color: var(--ribbon)">Live from the Kitchen</div>
+        <h2 id="live-heading">Cook along with Henry, live</h2>
+        <p style="margin: 0">Henry cooks live on Twitch every Sunday and Wednesday.</p>
+        <a class="btn btn-primary" style="align-self: flex-start" href="https://www.twitch.tv/henlips1">Watch on Twitch</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-mint" aria-labelledby="meet-heading">
+    <div class="wrap meet-row">
+      <img class="chef-circle" src="/assets/img/henry.jpg" alt="Henry in his kitchen, wearing a well-used apron" width="300" height="300" loading="lazy">
+      <div class="stack" style="flex: 1 1 320px">
+        <h2 id="meet-heading">Meet the Chef</h2>
+        <p style="margin: 0; max-width: 720px"><ContentText Value="[[Henry has been explaining cooking since 2011, from Killer Oven Baked French Toast to the Turkey McBreakfast Sandwich.]]" /></p>
+        <a href="/about/" class="text-link">More about Henry</a>
+      </div>
+    </div>
+  </section>
+</main>
+</SiteLayout>
+
+@code {
+    [Parameter, EditorRequired] public HomePageModel Model { get; set; } = default!;
+
+    private RecipePageModel Featured => Model.Featured;
+
+    /// <summary>"Featured Recipe · Beef", or just "Featured Recipe" if it isn't filed yet.</summary>
+    private string FeaturedKicker => Featured.Filed is { } filed ? $"Featured Recipe · {filed.Name}" : "Featured Recipe";
+}

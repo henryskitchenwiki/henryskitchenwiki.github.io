@@ -26,9 +26,10 @@ the site going: recipes go in through pull requests, and GitHub builds and publi
 |---|---|---|
 | `content/recipes/` | One file per written-up recipe, e.g. `big-mac.md` | Writers, through the Desk |
 | `content/_templates/` | A blank recipe file, for writing one by hand | Rarely |
+| `content/home.json` | Which recipe is featured at the top of the home page | Site maintainers |
 | `content/search/search-words.json` | Words that mean the same thing in a search, e.g. fry / fries | Anyone who finds a search that misses |
 | `data/videos.json` | Every Henry’s Kitchen recipe episode: title, date, length | The weekly YouTube check (coming); otherwise by hand, carefully |
-| `static/` | Hand-written pages (home, About, search, the Desk), styles, scripts, images | Site maintainers |
+| `static/` | Hand-written pages (About, search, the Desk), styles, scripts, images | Site maintainers |
 | `src/HenrysKitchen.Core/` | The rules: what a recipe is, reading recipe files, checking them | Site maintainers |
 | `src/HenrysKitchen.Build/` | The build: turns all of the above into the finished site | Site maintainers |
 | `tests/HenrysKitchen.Tests/` | Automated tests for the rules | Site maintainers |
@@ -70,6 +71,10 @@ Build options:
 - **Change how recipe pages look:** `src/HenrysKitchen.Build/Components/RecipePage.razor`
   (layout) and `static/assets/css/site.css` (styles). What a page shows is worked out in
   `RecipePageModel.cs`.
+- **Change the home page:** `Components/HomePage.razor`. The Latest and the Recipe Box fill
+  themselves (`HomePageModel.cs`); the featured recipe is set in `content/home.json`.
+- **How titles are shown:** `TitleRules.cs` in Core. "How to Make a Big Mac" shows as "Big Mac";
+  Henry’s full title stays searchable.
 - **Change the header or footer:** `Components/SiteLayout.razor`, and the copies in the
   hand-written pages under `static/`.
 - **Add a check for recipe files:** `RecipeLoader.cs` for checks on a single file,

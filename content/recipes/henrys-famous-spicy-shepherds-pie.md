@@ -2,7 +2,7 @@
 # ── Identity ──
 id: henrys-famous-spicy-shepherds-pie
 title: "Henry’s Famous Spicy Shepherd’s Pie"
-subtitle: ""
+subtitle: "A British Classic With A Spicy Twist"
 
 # ── Source video ──
 youtube_id: "l4eOa06DcyQ"
